@@ -57,7 +57,7 @@ db.run(`
 
 function closeDB() {
   try {
-    db.close();
+    db.close(false);
     console.log("SQLite database closed.");
   } catch (err) {
     console.error("Error closing DB:", err);
