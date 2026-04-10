@@ -20,9 +20,11 @@ db.run(`
   CREATE TABLE IF NOT EXISTS financial_accounts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
-    name TEXT,
+    name TEXT NOT NULL,
+    type TEXT NOT NULL,
+    institution TEXT,
     description TEXT,
-    type TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
   );
 `);
@@ -32,10 +34,24 @@ db.run(`
   CREATE TABLE IF NOT EXISTS transactions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     financial_account_id INTEGER NOT NULL,
-    date TEXT,
+    date TEXT NOT NULL,
     description TEXT,
-    amount REAL,
-    FOREIGN KEY(financial_account_id) REFERENCES financial_accounts(id) ON DELETE CASCADE
+    amount REAL NOT NULL,
+    category_id INTEGER,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(financial_account_id) REFERENCES financial_accounts(id) ON DELETE CASCADE,
+    FOREIGN KEY(category_id) REFERENCES categories(id)
+  );
+`);
+
+// CATEGORIES (per user, for classifying transactions)
+db.run(`
+  CREATE TABLE IF NOT EXISTS categories (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    type TEXT NOT NULL,
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
   );
 `);
 
