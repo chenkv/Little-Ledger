@@ -47,14 +47,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           "
         >
           <div className="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
-            <h1
+            <Link
               className="
                 text-2xl font-bold tracking-tight
                 text-(--text) dark:text-(--text-dark)
               "
+              href="/"
             >
-              Ledger
-            </h1>
+              LittleLedger
+            </Link>
 
             <div className="flex items-center gap-6">
               <nav
@@ -75,14 +76,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   Home
                 </Link>
                 <Link
-                  href="/app"
+                  href="/home"
                   className="
                     hover:text-(--text)
                     dark:hover:text-(--text-dark)
                     transition
                   "
                 >
-                  App
+                  My Ledger
                 </Link>
                 <Link
                   href="/about"
