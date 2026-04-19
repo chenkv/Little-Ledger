@@ -34,23 +34,23 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body
         className="
           min-h-screen flex flex-col
-          bg-[var(--bg)] text-[var(--text)]
-          dark:bg-[var(--bg-dark)] dark:text-[var(--text-dark)]
+          bg-(--bg) text-(--text)
+          dark:bg-(--bg-dark) dark:text-(--text-dark)
         "
       >
         {/* Header */}
         <header
           className="
             shadow-sm border-b
-            bg-[var(--surface)] border-[var(--border)]
-            dark:bg-[var(--surface-dark)] dark:border-[var(--border-dark)]
+            bg-(--surface) border-(--border)
+            dark:bg-(--surface-dark) dark:border-(--border-dark)
           "
         >
           <div className="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
             <h1
               className="
                 text-2xl font-bold tracking-tight
-                text-[var(--text)] dark:text-[var(--text-dark)]
+                text-(--text) dark:text-(--text-dark)
               "
             >
               Ledger
@@ -60,15 +60,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <nav
                 className="
                   flex gap-6 font-medium
-                  text-[var(--text-secondary)]
-                  dark:text-[var(--text-secondary-dark)]
+                  text-(--text-secondary)
+                  dark:text-(--text-secondary-dark)
                 "
               >
                 <Link
                   href="/"
                   className="
-                    hover:text-[var(--text)]
-                    dark:hover:text-[var(--text-dark)]
+                    hover:text-(--text)
+                    dark:hover:text-(--text-dark)
                     transition
                   "
                 >
@@ -77,8 +77,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <Link
                   href="/app"
                   className="
-                    hover:text-[var(--text)]
-                    dark:hover:text-[var(--text-dark)]
+                    hover:text-(--text)
+                    dark:hover:text-(--text-dark)
                     transition
                   "
                 >
@@ -87,8 +87,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <Link
                   href="/about"
                   className="
-                    hover:text-[var(--text)]
-                    dark:hover:text-[var(--text-dark)]
+                    hover:text-(--text)
+                    dark:hover:text-(--text-dark)
                     transition
                   "
                 >
@@ -108,10 +108,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <footer
           className="
             py-8 text-center text-sm
-            bg-[var(--surface)] border-t border-[var(--border)]
-            text-[var(--text-secondary)]
-            dark:bg-[var(--surface-dark)] dark:border-[var(--border-dark)]
-            dark:text-[var(--text-secondary-dark)]
+            bg-(--surface) border-t border-(--border)
+            text-(--text-secondary)
+            dark:bg-(--surface-dark) dark:border-(--border-dark)
+            dark:text-(--text-secondary-dark)
           "
         >
           © {new Date().getFullYear()} Ledger. Built with warmth.

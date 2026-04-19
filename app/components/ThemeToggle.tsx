@@ -20,10 +20,10 @@ export default function ThemeToggle() {
     <button
       onClick={toggleTheme}
       className="px-3 py-2 rounded-md text-xl
-                 border border-[var(--border)] dark:border-[var(--border-dark)]
-                 bg-[var(--card)] dark:bg-[var(--card-dark)]
-                 text-[var(--text)] dark:text-[var(--text-dark)]
-                 hover:bg-[var(--surface)] dark:hover:bg-[var(--surface-dark)]
+                 border border-(--border) dark:border-(--border-dark)
+                 bg-(--card) dark:bg-(--card-dark)
+                 text-(--text) dark:text-(--text-dark)
+                 hover:bg-(--surface) dark:hover:bg-(--surface-dark)
                  transition"
     >
       {isDark ? "🌜" : "🌞"}

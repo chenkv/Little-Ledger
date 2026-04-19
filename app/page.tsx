@@ -5,8 +5,8 @@ export default function LandingPage() {
     <main
       className="
         min-h-screen
-        bg-[var(--bg)] text-[var(--text)]
-        dark:bg-[var(--bg-dark)] dark:text-[var(--text-dark)]
+        bg-(--bg) text-(--text)
+        dark:bg-(--bg-dark) dark:text-(--text-dark)
       "
     >
       {/* Hero Section */}
@@ -14,7 +14,7 @@ export default function LandingPage() {
         <h1
           className="
             text-4xl md:text-6xl font-bold tracking-tight
-            text-[var(--text)] dark:text-[var(--text-dark)]
+            text-(--text) dark:text-(--text-dark)
           "
         >
           Ledger, by the Fireside
@@ -23,8 +23,8 @@ export default function LandingPage() {
         <p
           className="
             mt-6 text-lg md:text-xl max-w-2xl mx-auto
-            text-[var(--text-secondary)]
-            dark:text-[var(--text-secondary-dark)]
+            text-(--text-secondary)
+            dark:text-(--text-secondary-dark)
           "
         >
           A warm, simple place to understand your money.
@@ -36,8 +36,8 @@ export default function LandingPage() {
             href="/home"
             className="
               px-6 py-3 rounded-lg font-medium shadow-md text-white
-              bg-[var(--primary)] hover:bg-[var(--primary-hover)]
-              dark:bg-[var(--primary-dark)] dark:hover:bg-[var(--primary-hover-dark)]
+              bg-(--primary) hover:bg-(--primary-hover)
+              dark:bg-(--primary-dark) dark:hover:bg-(--primary-hover-dark)
               transition
             "
           >
@@ -48,12 +48,12 @@ export default function LandingPage() {
             href="#features"
             className="
               px-6 py-3 rounded-lg font-medium
-              border border-[var(--border)]
-              text-[var(--text-secondary)]
-              hover:bg-[var(--surface)]
-              dark:border-[var(--border-dark)]
-              dark:text-[var(--text-secondary-dark)]
-              dark:hover:bg-[var(--surface-dark)]
+              border border-(--border)
+              text-(--text-secondary)
+              hover:bg-(--surface)
+              dark:border-(--border-dark)
+              dark:text-(--text-secondary-dark)
+              dark:hover:bg-(--surface-dark)
               transition
             "
           >
@@ -66,15 +66,15 @@ export default function LandingPage() {
       <section
         className="
           px-6 py-20
-          bg-[var(--surface)] border-t border-[var(--divider)]
-          dark:bg-[var(--surface-dark)] dark:border-[var(--divider-dark)]
+          bg-(--surface) border-t border-(--divider)
+          dark:bg-(--surface-dark) dark:border-(--divider-dark)
         "
       >
         <div className="max-w-5xl mx-auto">
           <h2
             className="
               text-3xl md:text-4xl font-bold text-center
-              text-[var(--text)] dark:text-[var(--text-dark)]
+              text-(--text) dark:text-(--text-dark)
             "
           >
             Crafted for Comfort
@@ -85,14 +85,14 @@ export default function LandingPage() {
             <div
               className="
                 p-6 rounded-xl shadow-sm
-                bg-[var(--card)] border border-[var(--border)]
-                dark:bg-[var(--card-dark)] dark:border-[var(--border-dark)]
+                bg-(--card) border border-(--border)
+                dark:bg-(--card-dark) dark:border-(--border-dark)
               "
             >
               <h3
                 className="
                   text-xl font-semibold
-                  text-[var(--text)] dark:text-[var(--text-dark)]
+                  text-(--text) dark:text-(--text-dark)
                 "
               >
                 Local & Private
@@ -100,8 +100,8 @@ export default function LandingPage() {
               <p
                 className="
                   mt-3
-                  text-[var(--text-secondary)]
-                  dark:text-[var(--text-secondary-dark)]
+                  text-(--text-secondary)
+                  dark:text-(--text-secondary-dark)
                 "
               >
                 Your data stays with you — like a journal kept in a drawer,
@@ -113,14 +113,14 @@ export default function LandingPage() {
             <div
               className="
                 p-6 rounded-xl shadow-sm
-                bg-[var(--card)] border border-[var(--border)]
-                dark:bg-[var(--card-dark)] dark:border-[var(--border-dark)]
+                bg-(--card) border border-(--border)
+                dark:bg-(--card-dark) dark:border-(--border-dark)
               "
             >
               <h3
                 className="
                   text-xl font-semibold
-                  text-[var(--text)] dark:text-[var(--text-dark)]
+                  text-(--text) dark:text-(--text-dark)
                 "
               >
                 Thoughtful Categorization
@@ -128,8 +128,8 @@ export default function LandingPage() {
               <p
                 className="
                   mt-3
-                  text-[var(--text-secondary)]
-                  dark:text-[var(--text-secondary-dark)]
+                  text-(--text-secondary)
+                  dark:text-(--text-secondary-dark)
                 "
               >
                 Import statements, build rules, and let Ledger gently organize
@@ -141,14 +141,14 @@ export default function LandingPage() {
             <div
               className="
                 p-6 rounded-xl shadow-sm
-                bg-[var(--card)] border border-[var(--border)]
-                dark:bg-[var(--card-dark)] dark:border-[var(--border-dark)]
+                bg-(--card) border border-(--border)
+                dark:bg-(--card-dark) dark:border-(--border-dark)
               "
             >
               <h3
                 className="
                   text-xl font-semibold
-                  text-[var(--text)] dark:text-[var(--text-dark)]
+                  text-(--text) dark:text-(--text-dark)
                 "
               >
                 Fast & Lightweight
@@ -156,8 +156,8 @@ export default function LandingPage() {
               <p
                 className="
                   mt-3
-                  text-[var(--text-secondary)]
-                  dark:text-[var(--text-secondary-dark)]
+                  text-(--text-secondary)
+                  dark:text-(--text-secondary-dark)
                 "
               >
                 Powered by Bun + SQLite for instant performance — even on a

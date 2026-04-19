@@ -3,15 +3,15 @@ export default function HomePage() {
     <main
       className="
         min-h-screen
-        bg-[var(--bg)] text-[var(--text)]
-        dark:bg-[var(--bg-dark)] dark:text-[var(--text-dark)]
+        bg-(--bg) text-(--text)
+        dark:bg-(--bg-dark) dark:text-(--text-dark)
       "
     >
       <section className="px-6 py-24 md:py-32 max-w-5xl mx-auto text-center">
         <h1
           className="
             text-4xl md:text-6xl font-bold tracking-tight
-            text-[var(--text)] dark:text-[var(--text-dark)]
+            text-(--text) dark:text-(--text-dark)
           "
         >
           Welcome to Your Ledger
@@ -20,8 +20,8 @@ export default function HomePage() {
         <p
           className="
             mt-6 text-lg md:text-xl max-w-2xl mx-auto
-            text-[var(--text-secondary)]
-            dark:text-[var(--text-secondary-dark)]
+            text-(--text-secondary)
+            dark:text-(--text-secondary-dark)
           "
         >
           This is your personal space to understand and manage your finances.
