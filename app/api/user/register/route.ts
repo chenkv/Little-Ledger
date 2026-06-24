@@ -1,0 +1,60 @@
+import { NextResponse } from "next/server";
+import db from "@/lib/db"; // adjust path if needed
+
+export async function POST(req: Request) {
+  try {
+    console.log(req);
+    const { username, email, password } = await req.json();
+
+    // Basic validation
+    if (!email || !password) {
+      return NextResponse.json(
+        { error: "Email and password are required" },
+        { status: 400 }
+      );
+    }
+
+    // Check if user already exists
+    const existing = db
+      .query("SELECT * FROM users WHERE email = ?")
+      .get(email);
+
+    if (existing) {
+      return NextResponse.json(
+        { error: "User with that email already exists" },
+        { status: 409 }
+      );
+    }
+
+    const passwordHash = await Bun.password.hash(password);
+
+    // Insert user
+    const res = db.query(
+      "INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)"
+    ).run(username || null, email, passwordHash);
+
+    if (!res) {
+      return NextResponse.json(
+        { error: "Failed to register user" },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json(
+      { message: "User registered successfully" },
+      { status: 201 }
+    );
+  } catch (err) {
+    console.error("Register error:", err);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE THIS
+export async function GET() {
+  const users = db.query("SELECT id, username, email, created_at FROM users").all();
+  return NextResponse.json(users);
+}

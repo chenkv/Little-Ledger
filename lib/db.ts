@@ -8,10 +8,22 @@ db.run("PRAGMA foreign_keys = ON;");
 db.run(`
   CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT,
+    username TEXT,
     email TEXT UNIQUE,
     password_hash TEXT,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
+  );
+`);
+
+// LOGIN SESSIONS (per user)
+db.run(`
+  CREATE TABLE IF NOT EXISTS sessions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    session_token TEXT UNIQUE NOT NULL,
+    expires_at TEXT NOT NULL,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
   );
 `);
 
