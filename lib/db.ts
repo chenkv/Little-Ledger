@@ -1,6 +1,8 @@
 import { Database } from "bun:sqlite";
 
-const db = new Database("ledger-data.db", { create: true });
+const isTestEnv = process.env.NODE_ENV === "test" || process.env.BUN_TEST === "true";
+const databasePath = process.env.LEDGER_DB_PATH || (isTestEnv ? "TEST-ledger-data.db" : "ledger-data.db");
+const db = new Database(databasePath, { create: true });
 
 db.run("PRAGMA foreign_keys = ON;");
 
