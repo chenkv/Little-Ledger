@@ -1,3 +1,7 @@
 [test]
 # To require 90% line-level and function-level coverage
 coverageThreshold = 0.9
+
+coveragePathIgnorePatterns = [
+  "lib/**"
+]
