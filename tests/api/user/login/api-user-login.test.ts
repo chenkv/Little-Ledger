@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "bun:test";
+import { beforeEach, describe, expect, it, mock } from "bun:test";
 
 process.env.LEDGER_DB_PATH = ":memory:";
 
@@ -102,5 +102,85 @@ describe("login endpoint", () => {
 
     expect(res.status).toBe(401);
     expect(body.error).toBe("Invalid email or password");
+  });
+
+  it("returns 500 when session creation fails", async () => {
+    await registerPost(
+      new Request("http://localhost/api/user/register", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          username: "erin",
+          email: "erin@example.com",
+          password: "secret123",
+        }),
+      })
+    );
+
+    const originalQuery = db.query.bind(db);
+    db.query = ((sql: string) => {
+      if (sql.includes("INSERT INTO sessions")) {
+        return {
+          run: () => null,
+        } as unknown as ReturnType<typeof db.query>;
+      }
+
+      return originalQuery(sql);
+    }) as typeof db.query;
+
+    const req = new Request("http://localhost/api/user/login", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        email: "erin@example.com",
+        password: "secret123",
+      }),
+    });
+
+    const res = await loginPost(req);
+    const body = await res.json();
+
+    db.query = originalQuery;
+
+    expect(res.status).toBe(500);
+    expect(body.error).toBe("Failed to create session");
+  });
+
+  it("returns 500 for unexpected login errors", async () => {
+    await registerPost(
+      new Request("http://localhost/api/user/register", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          username: "frank",
+          email: "frank@example.com",
+          password: "secret123",
+        }),
+      })
+    );
+
+    const originalVerify = Bun.password.verify;
+    Bun.password.verify = async () => {
+      throw new Error("boom");
+    };
+
+    try {
+      const req = new Request("http://localhost/api/user/login", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          email: "frank@example.com",
+          password: "secret123",
+        }),
+      });
+
+      const res = await loginPost(req);
+      const body = await res.json();
+
+      expect(res.status).toBe(500);
+      expect(body.error).toBe("Internal server error");
+    } finally {
+      Bun.password.verify = originalVerify;
+    }
   });
 });
