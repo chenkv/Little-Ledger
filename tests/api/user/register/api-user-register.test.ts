@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from "bun:test";
 process.env.LEDGER_DB_PATH = ":memory:";
 
 import db from "@/lib/db";
-import { POST as registerPost } from "@/app/api/user/register/route";
+import { GET as listUsers, POST as registerPost } from "@/app/api/user/register/route";
 
 describe("register endpoint", () => {
   beforeEach(() => {
@@ -72,5 +72,63 @@ describe("register endpoint", () => {
 
     expect(res.status).toBe(400);
     expect(body.error).toBe("Email and password are required");
+  });
+
+  it("returns 500 when user insert fails", async () => {
+    const originalQuery = db.query.bind(db);
+    db.query = ((sql: string) => {
+      if (sql.includes("INSERT INTO users")) {
+        return {
+          run: () => null,
+        } as unknown as ReturnType<typeof db.query>;
+      }
+
+      return originalQuery(sql);
+    }) as typeof db.query;
+
+    const req = new Request("http://localhost/api/user/register", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        username: "insert-fail",
+        email: "insert-fail@example.com",
+        password: "secret123",
+      }),
+    });
+
+    const res = await registerPost(req);
+    const body = await res.json();
+
+    db.query = originalQuery;
+
+    expect(res.status).toBe(500);
+    expect(body.error).toBe("Failed to register user");
+  });
+
+  it("returns 500 for unexpected registration errors", async () => {
+    const originalHash = Bun.password.hash;
+    Bun.password.hash = async () => {
+      throw new Error("boom");
+    };
+
+    try {
+      const req = new Request("http://localhost/api/user/register", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          username: "error-user",
+          email: "error-user@example.com",
+          password: "secret123",
+        }),
+      });
+
+      const res = await registerPost(req);
+      const body = await res.json();
+
+      expect(res.status).toBe(500);
+      expect(body.error).toBe("Internal server error");
+    } finally {
+      Bun.password.hash = originalHash;
+    }
   });
 });

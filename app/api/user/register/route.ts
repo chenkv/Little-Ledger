@@ -52,9 +52,3 @@ export async function POST(req: Request) {
     );
   }
 }
-
-// DELETE THIS
-export async function GET() {
-  const users = db.query("SELECT id, username, email, created_at FROM users").all();
-  return NextResponse.json(users);
-}
