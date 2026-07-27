@@ -3,7 +3,6 @@ import db from "@/lib/db"; // adjust path if needed
 
 export async function POST(req: Request) {
   try {
-    console.log(req);
     const { username, email, password } = await req.json();
 
     // Basic validation
