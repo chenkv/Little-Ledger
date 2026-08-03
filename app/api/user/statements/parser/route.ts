@@ -23,13 +23,19 @@ export async function POST(req: Request) {
   }
 
   const transactions = [];
+  const extra = meta ? JSON.parse(meta.toString()) : {};
+  const source = typeof extra.source === "string" ? extra.source : undefined;
+  const rule = getRule(source);
+
+  if (!rule) {
+    return NextResponse.json(
+      { error: "No parsing rule found for the provided source" },
+      { status: 400 }
+    );
+  }
 
   if (file.type.includes("application/pdf")) {
     const arrayBuffer = await file.arrayBuffer();
-    const extra = meta ? JSON.parse(meta.toString()) : {};
-
-    const source = typeof extra.source === "string" ? extra.source : undefined;
-    const rule = getRule(source);
 
     // parse buffer, use extra metadata
     const extractedText = await extractPdfText(arrayBuffer);
@@ -50,10 +56,45 @@ export async function POST(req: Request) {
         transactions.push({ date, description, amount });
       } else {
         console.warn("Failed to parse row:", row);
+        return NextResponse.json(
+          { error: "Failed to parse a transaction row." },
+          { status: 400 }
+        );
       }
     }
   } else if (file.type.includes("text/csv")) {
-    transactions.push("Not implemented yet");
+    const csvText = await file.text();
+    const lines = csvText
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+    const csvLines = rule.skipCsvHeader ? lines.slice(1) : lines;
+
+    if (!rule.csvRowPattern) {
+      return NextResponse.json(
+        { error: "No CSV parsing rule defined for the provided source" },
+        { status: 500 }
+      );
+    }
+
+    for (const row of csvLines) {
+      const match = row.match(rule.csvRowPattern);
+      if (match) {
+        const date = match[1].trim();
+        const description = match[2].trim();
+        const amount = match[3].trim();
+        // Ignoring negative amounts for now as they represent credits or payments
+        if (Number(amount) >= 0) {
+          transactions.push({ date, description, amount });
+        }
+      } else {
+        console.warn("Failed to parse CSV row:", row);
+        return NextResponse.json(
+          { error: "Failed to parse a transaction row." },
+          { status: 400 }
+        );
+      }
+    }
   }
 
   if (transactions.length === 0) {
