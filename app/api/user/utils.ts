@@ -4,7 +4,6 @@ import db from "@/lib/db";
 
 export async function getUserIdFromRequest(req: Request) {
   const authHeader = req.headers.get("authorization");
-  console.log("Authorization header:", authHeader);
   if (!authHeader || !authHeader.startsWith("Bearer ")) return null;
 
   const token = authHeader.slice("Bearer ".length).trim();
