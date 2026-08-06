@@ -39,16 +39,26 @@ export const discoverRule: StatementSourceRule = {
   normalizeDescription: (value: string) => value.trim().replace(/\s+/g, " "),
 };
 
+export const chaseRule: StatementSourceRule = {
+  id: "chase",
+  label: "Chase",
+  sectionPattern: /Transaction Merchant Name([\s\S]*?)Year-to-date/i,
+  transactionRowsPattern: /^\d{2}\/\d{2}[^\n]*?[\s][\d,]+\.\d{2}$/gm,
+  transactionRowPattern: /(\d{2}\/\d{2})[\s]+([\s\S]*?)[\s]+([\d,]+\.\d{2})/i,
+  normalizeDescription: (value: string) => value.trim().replace(/\s+/g, " "),
+};
+
 const rules: Record<string, StatementSourceRule> = {
   "american-express": americanExpressRule,
   "discover": discoverRule,
+  "chase": chaseRule,
 };
 
-export function getRule(source?: string): StatementSourceRule {
+export function getRule(source?: string): StatementSourceRule | null {
   if (!source) {
-    return americanExpressRule;
+    return null;
   }
 
   const key = source.toLowerCase();
-  return rules[key] ?? americanExpressRule;
+  return rules[key];
 }
