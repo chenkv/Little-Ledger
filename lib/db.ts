@@ -54,7 +54,7 @@ db.run(`
     category_id INTEGER,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(financial_account_id) REFERENCES financial_accounts(id) ON DELETE CASCADE,
-    FOREIGN KEY(category_id) REFERENCES categories(id)
+    FOREIGN KEY(category_id) REFERENCES categories(id) ON DELETE CASCADE
   );
 `);
 
