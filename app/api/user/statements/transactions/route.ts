@@ -115,3 +115,19 @@ export async function POST(req: Request) {
     );
   }
 }
+
+export async function GET(req: Request) {
+  const userId = await getUserIdFromRequest(req);
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const result = db.query(
+    `SELECT t.* FROM transactions t
+      JOIN financial_accounts fa ON t.financial_account_id = fa.id
+      WHERE fa.user_id = ?
+      ORDER BY t.date DESC`
+  ).all(userId);
+
+  return NextResponse.json(result);
+}
