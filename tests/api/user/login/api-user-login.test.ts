@@ -128,22 +128,24 @@ describe("login endpoint", () => {
       return originalQuery(sql);
     }) as typeof db.query;
 
-    const req = new Request("http://localhost/api/user/login", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        email: "erin@example.com",
-        password: "secret123",
-      }),
-    });
+    try {
+      const req = new Request("http://localhost/api/user/login", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          email: "erin@example.com",
+          password: "secret123",
+        }),
+      });
 
-    const res = await loginPost(req);
-    const body = await res.json();
+      const res = await loginPost(req);
+      const body = await res.json();
 
-    db.query = originalQuery;
-
-    expect(res.status).toBe(500);
-    expect(body.error).toBe("Failed to create session");
+      expect(res.status).toBe(500);
+      expect(body.error).toBe("Failed to create session");
+    } finally {
+      db.query = originalQuery;
+    }
   });
 
   it("returns 500 for unexpected login errors", async () => {

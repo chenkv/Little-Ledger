@@ -86,23 +86,25 @@ describe("register endpoint", () => {
       return originalQuery(sql);
     }) as typeof db.query;
 
-    const req = new Request("http://localhost/api/user/register", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        username: "insert-fail",
-        email: "insert-fail@example.com",
-        password: "secret123",
-      }),
-    });
+    try {
+      const req = new Request("http://localhost/api/user/register", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          username: "insert-fail",
+          email: "insert-fail@example.com",
+          password: "secret123",
+        }),
+      });
 
-    const res = await registerPost(req);
-    const body = await res.json();
+      const res = await registerPost(req);
+      const body = await res.json();
 
-    db.query = originalQuery;
-
-    expect(res.status).toBe(500);
-    expect(body.error).toBe("Failed to register user");
+      expect(res.status).toBe(500);
+      expect(body.error).toBe("Failed to register user");
+    } finally {
+      db.query = originalQuery;
+    }
   });
 
   it("returns 500 for unexpected registration errors", async () => {
