@@ -22,6 +22,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Missing file" }, { status: 400 });
   }
 
+  const isPdf = file.type.includes("application/pdf");
+  const isCsv = file.type.includes("text/csv");
+  if (!isPdf && !isCsv) {
+    return NextResponse.json({ error: "Unsupported file type. Please upload a PDF or CSV file." }, { status: 415 });
+  }
+
   const transactions = [];
   const extra = meta ? JSON.parse(meta.toString()) : {};
   const source = typeof extra.source === "string" ? extra.source : undefined;

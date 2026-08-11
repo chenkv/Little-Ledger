@@ -65,6 +65,23 @@ describe("statement parser endpoint", () => {
     expect(body.error).toBe("Missing file");
   });
 
+  it("returns 415 when the uploaded file is not a PDF or CSV", async () => {
+    const formData = new FormData();
+    formData.set("meta", JSON.stringify({ source: "chase" }));
+    formData.set("file", new Blob(["dummy"], { type: "application/json" }), "statement.json");
+
+    const req = new Request("http://localhost/api/user/statements/parser", {
+      method: "POST",
+      body: formData,
+    });
+
+    const res = await parserPost(req);
+    const body = await res.json();
+
+    expect(res.status).toBe(415);
+    expect(body.error).toBe("Unsupported file type. Please upload a PDF or CSV file.");
+  });
+
   it("returns 400 when the provided source has no parse rule", async () => {
     const formData = new FormData();
     formData.set("meta", JSON.stringify({ source: "unknown-bank" }));
