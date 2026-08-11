@@ -122,12 +122,12 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const result = db.query(
+  const transactions = db.query(
     `SELECT t.* FROM transactions t
       JOIN financial_accounts fa ON t.financial_account_id = fa.id
       WHERE fa.user_id = ?
       ORDER BY t.date DESC`
   ).all(userId);
 
-  return NextResponse.json(result);
+  return NextResponse.json({ transactions }, { status: 200 });
 }

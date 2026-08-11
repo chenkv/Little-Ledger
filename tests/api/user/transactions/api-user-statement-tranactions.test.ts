@@ -393,10 +393,10 @@ describe("transactions endpoint", () => {
     const body = await res.json();
 
     expect(res.status).toBe(200);
-    expect(Array.isArray(body)).toBe(true);
-    expect(body.length).toBe(2);
-    expect(body.every((tx: any) => tx.financial_account_id === account1)).toBe(true);
-    expect(body[0].date >= body[1].date).toBe(true);
+    expect(Array.isArray(body.transactions)).toBe(true);
+    expect(body.transactions.length).toBe(2);
+    expect(body.transactions.every((tx: any) => tx.financial_account_id === account1)).toBe(true);
+    expect(body.transactions[0].date >= body.transactions[1].date).toBe(true);
   });
 
   it("returns an empty array for GET when the authenticated user has no transactions", async () => {
@@ -413,7 +413,7 @@ describe("transactions endpoint", () => {
     const body = await res.json();
 
     expect(res.status).toBe(200);
-    expect(Array.isArray(body)).toBe(true);
-    expect(body.length).toBe(0);
+    expect(Array.isArray(body.transactions)).toBe(true);
+    expect(body.transactions.length).toBe(0);
   });
 });
