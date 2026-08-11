@@ -114,6 +114,70 @@ describe("statement parser endpoint", () => {
     });
   });
 
+  it("parses an American Express PDF statement using a mocked extractPdfText implementation", async () => {
+    extractPdfTextSpy.mockImplementationOnce(async () =>
+      "New Charges\n08/05/26  Some merchant  $12.00\n08/06/26  Other merchant  $45.50\nSummary\nFees"
+    );
+
+    const formData = new FormData();
+    formData.set("meta", JSON.stringify({ source: "american-express" }));
+    formData.set("file", new Blob(["dummy"], { type: "application/pdf" }), "statement.pdf");
+
+    const req = new Request("http://localhost/api/user/statements/parser", {
+      method: "POST",
+      body: formData,
+    });
+
+    const res = await parserPost(req);
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(Array.isArray(body.transactions)).toBe(true);
+    expect(body.transactions.length).toBe(2);
+    expect(body.transactions[0]).toEqual({
+      date: "08/05/26",
+      description: "Some merchant",
+      amount: "12.00",
+    });
+    expect(body.transactions[1]).toEqual({
+      date: "08/06/26",
+      description: "Other merchant",
+      amount: "45.50",
+    });
+  });
+
+  it("parses a Discover PDF statement using a mocked extractPdfText implementation", async () => {
+    extractPdfTextSpy.mockImplementationOnce(async () =>
+      "Transactions\n05/01/26 05/02/26 Some merchant\n$ 12.00\n06/01/26 06/02/26 Other merchant\n$ 45.50\nStatement Balance is the total"
+    );
+
+    const formData = new FormData();
+    formData.set("meta", JSON.stringify({ source: "discover" }));
+    formData.set("file", new Blob(["dummy"], { type: "application/pdf" }), "statement.pdf");
+
+    const req = new Request("http://localhost/api/user/statements/parser", {
+      method: "POST",
+      body: formData,
+    });
+
+    const res = await parserPost(req);
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(Array.isArray(body.transactions)).toBe(true);
+    expect(body.transactions.length).toBe(2);
+    expect(body.transactions[0]).toEqual({
+      date: "05/01/26",
+      description: "Some merchant",
+      amount: "12.00",
+    });
+    expect(body.transactions[1]).toEqual({
+      date: "06/01/26",
+      description: "Other merchant",
+      amount: "45.50",
+    });
+  });
+
   it("returns 400 when the PDF contains an invalid transaction row", async () => {
     extractPdfTextSpy.mockImplementationOnce(async () =>
       "Transaction Merchant Name\n05/01/02 Description $ 15.30\nYear-to-date"
