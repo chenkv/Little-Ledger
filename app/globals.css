@@ -1,26 +1,40 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+  /* Light Mode — Cabin in the Forest */
+  --bg: #F7F3EE;
+  --surface: #FFFDF9;
+  --card: #F2EBE3;
+  --border: #E0D6C8;
+  --divider: #E6DDD2;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --text: #3B2F2F;
+  --text-secondary: #5A4A4A;
+  --text-muted: #7A6A6A;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+  --primary: #8B5E3C;
+  --primary-hover: #7A5234;
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  --accent: #6F7F4F;
+  --accent-hover: #5E6C42;
+  --accent-subtle: #DDE4D1;
+
+  /* Dark Mode — Cozy Cabin at Night */
+  --bg-dark: #1E1A17;
+  --surface-dark: #2A2420;
+  --card-dark: #3A302A;
+  --border-dark: #4A3F38;
+  --divider-dark: #4F443D;
+
+  --text-dark: #F5EDE6;
+  --text-secondary-dark: #D8C7BD;
+  --text-muted-dark: #A89A92;
+
+  --primary-dark: #D27A3F;
+  --primary-hover-dark: #BB6935;
+
+  --accent-dark: #A3472A;
+  --accent-glow-dark: #F2C7A0;
 }
