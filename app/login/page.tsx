@@ -1,17 +1,94 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { SignupFormSchema, prettifyError } from '@/app/lib/definitions'
 
 export default function LoginPage() {
   const [loginTab, setLoginTab] = useState<"login" | "register">("login");
-  const [formData, setFormData] = useState<{ username: string; password: string }>({ username: "", password: "" });
+  const [formData, setFormData] = useState<{ username: string; email: string; password: string }>({ username: "", email: "", password: "" });
+  const [formMessage, setFormMessage] = useState<string | null>(null);
 
-  function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
+  useEffect(() => {
+    setFormMessage(null); // Clear form message when switching tabs
+    setFormData({ username: "", email: "", password: "" }); // Clear form data when switching tabs
+  }, [loginTab]);
+
+  const router = useRouter();
+
+  async function handleLoginSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault(); // prevent page reload
 
-    console.log(`Form submitted: ${loginTab}`);
-    console.log("Username:", formData.username);
-    console.log("Password:", formData.password);
+    if (!formData.email || !formData.password) {
+      setFormMessage("Email and password are required");
+      return;
+    }
+
+    setFormMessage(null);
+
+    try {
+      const res = await fetch("/api/user/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ email: formData.email, password: formData.password }),
+      });
+
+      let payload: any = null;
+      try { payload = await res.json(); } catch (_) { payload = null; }
+
+      if (res.ok) {
+        
+        router.push("/home");
+      } else {
+        setFormMessage(payload?.error || payload?.message || "Login failed");
+      }
+    } catch (err) {
+      setFormMessage("Network error");
+    }
+  }
+
+  async function handleRegisterSubmit(e: React.SubmitEvent<HTMLFormElement>) {
+    e.preventDefault(); // prevent page reload
+
+    if (!formData.email || !formData.username || !formData.password) {
+      setFormMessage("All fields are required");
+      return;
+    }
+
+    const validatedFields = SignupFormSchema.safeParse({
+      username: formData.username,
+      email: formData.email,
+      password: formData.password,
+    })
+  
+    // If any form fields are invalid, return early
+    if (!validatedFields.success) {
+      setFormMessage(prettifyError(validatedFields));
+      return;
+    }
+
+    setFormMessage(null);
+
+    try {
+      const res = await fetch("/api/user/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ username: formData.username, email: formData.email, password: formData.password }),
+      });
+
+      let payload: any = null;
+      try { payload = await res.json(); } catch (_) { payload = null; }
+
+      if (res.ok) {
+        router.push("/home");
+      } else {
+        setFormMessage(payload?.error || payload?.message || "Registration failed");
+      }
+    } catch (err) {
+      setFormMessage("Network error");
+    }
   }
 
   return (
@@ -40,6 +117,7 @@ export default function LoginPage() {
             className={`
               flex-1 py-2 text-center font-medium
               text-(--text) hover:bg-(--card)
+              hover:cursor-pointer
               dark:text-(--text-dark) dark:hover:bg-(--card-dark)
               transition
               ${loginTab === "login" ? "border-b-2 border-(--accent)" : ""}
@@ -55,6 +133,7 @@ export default function LoginPage() {
               flex-1 py-2 text-center font-medium
               text-(--text-secondary) dark:text-(--text-secondary-dark)
               hover:bg-(--card) dark:hover:bg-(--card-dark)
+              hover:cursor-pointer
               transition
               ${loginTab === "register" ? "border-b-2 border-(--accent)" : ""}
             `}
@@ -66,11 +145,11 @@ export default function LoginPage() {
 
         {/* Form */}
         {loginTab === "login" ? (
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleLoginSubmit} className="space-y-4">
             <div>
-              <label className="block mb-1 text-sm">Username</label>
+              <label className="block mb-1 text-sm">Email</label>
               <input
-                type="text"
+                type="email"
                 className="
                   w-full px-3 py-2 rounded-md
                   bg-(--card) border border-(--border)
@@ -78,9 +157,9 @@ export default function LoginPage() {
                   dark:bg-(--card-dark) dark:border-(--border-dark) dark:text-(--text-dark)
                   focus:outline-none focus:ring-2 focus:ring-(--accent)
                 "
-                value={formData.username}
+                value={formData.email}
                 onChange={(e) =>
-                  setFormData({ ...formData, username: e.target.value })
+                  setFormData({ ...formData, email: e.target.value })
                 }
               />
             </div>
@@ -102,6 +181,12 @@ export default function LoginPage() {
                 }
               />
             </div>
+
+            {formMessage && (
+              <div className="text-center text-sm text-(--text-danger) dark:text-(--text-danger-dark) whitespace-pre-wrap">
+                {formMessage}
+              </div>
+            )}
 
             <button
               type="submit"
@@ -116,7 +201,7 @@ export default function LoginPage() {
             </button>
           </form>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleRegisterSubmit} className="space-y-4">
             <div>
               <label className="block mb-1 text-sm">Username</label>
               <input
@@ -131,6 +216,24 @@ export default function LoginPage() {
                 value={formData.username}
                 onChange={(e) =>
                   setFormData({ ...formData, username: e.target.value })
+                }
+              />
+            </div>
+
+            <div>
+              <label className="block mb-1 text-sm">Email</label>
+              <input
+                type="email"
+                className="
+                  w-full px-3 py-2 rounded-md
+                  bg-(--card) border border-(--border)
+                  text-(--text)
+                  dark:bg-(--card-dark) dark:border-(--border-dark) dark:text-(--text-dark)
+                  focus:outline-none focus:ring-2 focus:ring-(--accent)
+                "
+                value={formData.email}
+                onChange={(e) =>
+                  setFormData({ ...formData, email: e.target.value })
                 }
               />
             </div>
@@ -152,6 +255,12 @@ export default function LoginPage() {
                 }
               />
             </div>
+
+            {formMessage && (
+              <div className="text-center text-sm text-(--text-danger) dark:text-(--text-danger-dark) whitespace-pre-wrap">
+                {formMessage}
+              </div>
+            )}
 
             <button
               type="submit"
