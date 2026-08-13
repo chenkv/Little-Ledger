@@ -56,14 +56,26 @@ export async function POST(req: Request) {
       );
     }
 
-    return NextResponse.json({
+    const body = {
       message: "Login successful",
       user: { username, email: userEmail },
       session: {
         token: sessionToken,
         expiresAt: sessionExpiresAt,
       },
+    };
+
+    const res = NextResponse.json(body);
+    // Set HttpOnly cookie for session token. Client JS cannot read this cookie.
+    res.cookies.set("session_token", sessionToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV !== "test",
+      sameSite: "lax",
+      path: "/",
+      expires: new Date(sessionExpiresAt),
     });
+
+    return res;
   } catch (err) {
     console.error("Login error:", err);
     return NextResponse.json(
