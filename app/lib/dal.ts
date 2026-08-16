@@ -26,7 +26,7 @@ export function getSessionByToken(token: string) {
   if (!token) return null;
 
   return db
-    .query<SessionRow>(
+    .query(
       "SELECT id, user_id, session_token, expires_at FROM sessions WHERE session_token = ?",
     )
     .get(token) as SessionRow | null;
@@ -34,7 +34,7 @@ export function getSessionByToken(token: string) {
 
 export function getUserById(userId: number) {
   return db
-    .query<UserRow>("SELECT id, username, email FROM users WHERE id = ?")
+    .query("SELECT id, username, email FROM users WHERE id = ?")
     .get(userId) as UserRow | null;
 }
 

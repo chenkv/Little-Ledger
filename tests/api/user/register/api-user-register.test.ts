@@ -27,9 +27,11 @@ describe("register endpoint", () => {
 
     expect(res.status).toBe(201);
     expect(body.message).toBe("User registered successfully");
-    expect(db.query("SELECT COUNT(*) as count FROM users").get()?.count).toBe(
-      1,
-    );
+
+    const userCount = db.query("SELECT COUNT(*) as count FROM users").get() as {
+      count: number;
+    };
+    expect(userCount.count).toBe(1);
   });
 
   it("rejects duplicate registration emails", async () => {

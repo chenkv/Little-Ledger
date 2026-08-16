@@ -16,7 +16,9 @@ export async function POST(req: Request) {
       .query(
         "SELECT id, username, email, password_hash FROM users WHERE email = ?",
       )
-      .get(email);
+      .get(email) as
+      | { id: number; username: string; email: string; password_hash: string }
+      | undefined;
 
     if (!user) {
       return NextResponse.json(
