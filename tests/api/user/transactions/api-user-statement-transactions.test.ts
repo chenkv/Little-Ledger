@@ -92,8 +92,8 @@ describe("transactions endpoint", () => {
 
     const count = db
       .query("SELECT COUNT(*) as count FROM transactions")
-      .get()?.count;
-    expect(count).toBe(1);
+      .get() as { count: number };
+    expect(count.count).toBe(1);
   });
 
   it("rollbacks transaction insertions on error", async () => {
@@ -136,8 +136,8 @@ describe("transactions endpoint", () => {
 
     const count = db
       .query("SELECT COUNT(*) as count FROM transactions")
-      .get()?.count;
-    expect(count).toBe(0); // Ensure no transactions were inserted
+      .get() as { count: number };
+    expect(count.count).toBe(0); // Ensure no transactions were inserted
   });
 
   it("returns 400 when financial account is invalid", async () => {

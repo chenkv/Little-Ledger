@@ -11,7 +11,8 @@ export async function GET(req: Request) {
 
     const user = db
       .query("SELECT id, username, email FROM users WHERE id = ?")
-      .get(userId);
+      .get(userId) as
+      { id: number; username: string; email: string } | undefined;
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

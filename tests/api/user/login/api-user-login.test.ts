@@ -41,9 +41,11 @@ describe("login endpoint", () => {
     expect(body.message).toBe("Login successful");
     expect(body.session?.token).toBeTruthy();
     expect(body.session?.expiresAt).toBeTruthy();
-    expect(
-      db.query("SELECT COUNT(*) as count FROM sessions").get()?.count,
-    ).toBe(1);
+
+    const sessionsCount = db
+      .query("SELECT COUNT(*) as count FROM sessions")
+      .get() as { count: number };
+    expect(sessionsCount.count).toBe(1);
   });
 
   it("rejects invalid login credentials", async () => {
