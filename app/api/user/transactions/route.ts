@@ -13,19 +13,19 @@ export async function POST(req: Request) {
     if (!Array.isArray(transactions)) {
       return NextResponse.json(
         { error: "Request body must be an array of transactions" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     if (transactions.length === 0) {
       return NextResponse.json(
         { error: "Transaction list cannot be empty" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     const insertStmt = db.query(
-      "INSERT INTO transactions (financial_account_id, date, description, amount, category_id) VALUES (?, ?, ?, ?, ?)"
+      "INSERT INTO transactions (financial_account_id, date, description, amount, category_id) VALUES (?, ?, ?, ?, ?)",
     );
 
     db.run("BEGIN");
@@ -36,21 +36,28 @@ export async function POST(req: Request) {
         db.run("ROLLBACK");
         return NextResponse.json(
           { error: "Each transaction must be an object" },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
       const financialAccountId = Number(transaction.financial_account_id);
-      const date = typeof transaction.date === "string" ? transaction.date.trim() : "";
-      const description = typeof transaction.description === "string" ? transaction.description.trim() : null;
+      const date =
+        typeof transaction.date === "string" ? transaction.date.trim() : "";
+      const description =
+        typeof transaction.description === "string"
+          ? transaction.description.trim()
+          : null;
       const amount = Number(transaction.amount);
-      const categoryId = transaction.category_id == null ? null : Number(transaction.category_id);
+      const categoryId =
+        transaction.category_id == null
+          ? null
+          : Number(transaction.category_id);
 
       if (!Number.isInteger(financialAccountId) || financialAccountId <= 0) {
         db.run("ROLLBACK");
         return NextResponse.json(
           { error: "financial_account_id must be a positive integer" },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
@@ -58,7 +65,7 @@ export async function POST(req: Request) {
         db.run("ROLLBACK");
         return NextResponse.json(
           { error: "date is required for each transaction" },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
@@ -66,7 +73,7 @@ export async function POST(req: Request) {
         db.run("ROLLBACK");
         return NextResponse.json(
           { error: "amount must be a valid number" },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
@@ -75,14 +82,14 @@ export async function POST(req: Request) {
         date,
         description,
         amount,
-        categoryId
+        categoryId,
       );
 
       if (!result) {
         db.run("ROLLBACK");
         return NextResponse.json(
           { error: "Failed to insert transaction" },
-          { status: 500 }
+          { status: 500 },
         );
       }
 
@@ -100,7 +107,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json(
       { message: "Transactions inserted successfully", inserted },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error) {
     console.error("Transaction insert error:", error);
@@ -111,7 +118,7 @@ export async function POST(req: Request) {
     }
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -122,12 +129,14 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const transactions = db.query(
-    `SELECT t.* FROM transactions t
+  const transactions = db
+    .query(
+      `SELECT t.* FROM transactions t
       JOIN financial_accounts fa ON t.financial_account_id = fa.id
       WHERE fa.user_id = ?
-      ORDER BY t.date DESC`
-  ).all(userId);
+      ORDER BY t.date DESC`,
+    )
+    .all(userId);
 
   return NextResponse.json({ transactions }, { status: 200 });
 }

@@ -27,8 +27,8 @@ export default function LandingPage() {
             dark:text-(--text-secondary-dark)
           "
         >
-          A warm, simple place to understand your money.
-          Built for clarity, comfort, and peace of mind.
+          A warm, simple place to understand your money. Built for clarity,
+          comfort, and peace of mind.
         </p>
 
         <div className="mt-10 flex justify-center gap-4">
@@ -104,8 +104,8 @@ export default function LandingPage() {
                   dark:text-(--text-secondary-dark)
                 "
               >
-                Your data stays with you — like a journal kept in a drawer,
-                not in the cloud.
+                Your data stays with you — like a journal kept in a drawer, not
+                in the cloud.
               </p>
             </div>
 
@@ -160,8 +160,8 @@ export default function LandingPage() {
                   dark:text-(--text-secondary-dark)
                 "
               >
-                Powered by Bun + SQLite for instant performance — even on a
-                cozy little Raspberry Pi.
+                Powered by Bun + SQLite for instant performance — even on a cozy
+                little Raspberry Pi.
               </p>
             </div>
           </div>

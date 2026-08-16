@@ -1,4 +1,6 @@
 import ThemeToggle from "./components/ThemeToggle";
+import { ThemeProvider } from "@/app/lib/ThemeContext";
+import { cookies } from "next/headers";
 import Link from "next/link";
 import "./globals.css";
 
@@ -7,28 +9,19 @@ export const metadata = {
   description: "A warm, cozy place to understand your money",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const cookieStore = await cookies();
+
+  const theme = cookieStore.get("theme")?.value === "dark" ? "dark" : "light";
+
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className={theme} suppressHydrationWarning>
       <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                try {
-                  const stored = localStorage.getItem('theme');
-                  const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                  const activeDark = stored === 'dark' || (!stored && systemPrefersDark);
-                  if (activeDark) {
-                    document.documentElement.classList.add('dark');
-                  } else {
-                    document.documentElement.classList.remove('dark');
-                  }
-                } catch (e) {}
-              })();
-            `,
-          }}
-        />
+        <script />
       </head>
 
       <body
@@ -38,85 +31,87 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           dark:bg-(--bg-dark) dark:text-(--text-dark)
         "
       >
-        {/* Header */}
-        <header
-          className="
-            shadow-sm border-b
-            bg-(--surface) border-(--border)
-            dark:bg-(--surface-dark) dark:border-(--border-dark)
-          "
-        >
-          <div className="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
-            <Link
-              className="
-                text-2xl font-bold tracking-tight
-                text-(--text) dark:text-(--text-dark)
-              "
-              href="/"
-            >
-              LittleLedger
-            </Link>
-
-            <div className="flex items-center gap-6">
-              <nav
+        <ThemeProvider initialTheme={theme}>
+          {/* Header */}
+          <header
+            className="
+              shadow-sm border-b
+              bg-(--surface) border-(--border)
+              dark:bg-(--surface-dark) dark:border-(--border-dark)
+            "
+          >
+            <div className="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
+              <Link
                 className="
-                  flex gap-6 font-medium
-                  text-(--text-secondary)
-                  dark:text-(--text-secondary-dark)
+                  text-2xl font-bold tracking-tight
+                  text-(--text) dark:text-(--text-dark)
                 "
+                href="/"
               >
-                <Link
-                  href="/"
-                  className="
-                    hover:text-(--text)
-                    dark:hover:text-(--text-dark)
-                    transition
-                  "
-                >
-                  Home
-                </Link>
-                <Link
-                  href="/home"
-                  className="
-                    hover:text-(--text)
-                    dark:hover:text-(--text-dark)
-                    transition
-                  "
-                >
-                  My Ledger
-                </Link>
-                <Link
-                  href="/about"
-                  className="
-                    hover:text-(--text)
-                    dark:hover:text-(--text-dark)
-                    transition
-                  "
-                >
-                  About
-                </Link>
-              </nav>
+                LittleLedger
+              </Link>
 
-              <ThemeToggle />
+              <div className="flex items-center gap-6">
+                <nav
+                  className="
+                    flex gap-6 font-medium
+                    text-(--text-secondary)
+                    dark:text-(--text-secondary-dark)
+                  "
+                >
+                  <Link
+                    href="/"
+                    className="
+                      hover:text-(--text)
+                      dark:hover:text-(--text-dark)
+                      transition
+                    "
+                  >
+                    Home
+                  </Link>
+                  <Link
+                    href="/home"
+                    className="
+                      hover:text-(--text)
+                      dark:hover:text-(--text-dark)
+                      transition
+                    "
+                  >
+                    My Ledger
+                  </Link>
+                  <Link
+                    href="/about"
+                    className="
+                      hover:text-(--text)
+                      dark:hover:text-(--text-dark)
+                      transition
+                    "
+                  >
+                    About
+                  </Link>
+                </nav>
+
+                <ThemeToggle />
+              </div>
             </div>
-          </div>
-        </header>
+          </header>
 
-        {/* Main Content */}
-        <main className="flex-1">{children}</main>
+          {/* Main Content */}
+          <main className="flex-1">{children}</main>
 
-        {/* Footer */}
-        <footer
-          className="
-            py-8 text-center text-sm
-            bg-(--surface) border-t border-(--border)
-            text-(--text-secondary)
-            dark:bg-(--surface-dark) dark:border-(--border-dark)
-            dark:text-(--text-secondary-dark)
-          "
-        >
-          © {new Date().getFullYear()} Ledger. Built with warmth.
-        </footer>
+          {/* Footer */}
+          <footer
+            className="
+              py-8 text-center text-sm
+              bg-(--surface) border-t border-(--border)
+              text-(--text-secondary)
+              dark:bg-(--surface-dark) dark:border-(--border-dark)
+              dark:text-(--text-secondary-dark)
+            "
+          >
+            © {new Date().getFullYear()} Ledger. Built with warmth.
+          </footer>
+        </ThemeProvider>
       </body>
     </html>
   );

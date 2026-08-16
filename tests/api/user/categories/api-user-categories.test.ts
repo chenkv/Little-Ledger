@@ -3,18 +3,25 @@ import { beforeEach, describe, expect, it } from "bun:test";
 process.env.LEDGER_DB_PATH = ":memory:";
 
 import db from "@/lib/db";
-import { GET as categoriesGet, POST as categoriesPost } from "@/app/api/user/categories/route";
+import {
+  GET as categoriesGet,
+  POST as categoriesPost,
+} from "@/app/api/user/categories/route";
 
 function createSessionForUser(userId: number, token: string) {
   const insertSession = db.query(
-    "INSERT INTO sessions (user_id, session_token, expires_at) VALUES (?, ?, ?)"
+    "INSERT INTO sessions (user_id, session_token, expires_at) VALUES (?, ?, ?)",
   );
-  insertSession.run(userId, token, new Date(Date.now() + 1000 * 60 * 60).toISOString());
+  insertSession.run(
+    userId,
+    token,
+    new Date(Date.now() + 1000 * 60 * 60).toISOString(),
+  );
 }
 
 function createUser(suffix = "") {
   const insertUser = db.query(
-    "INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)"
+    "INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)",
   );
   const username = `category-user${suffix}`;
   const email = `category${suffix}@example.com`;
@@ -154,12 +161,16 @@ describe("categories endpoint", () => {
     createSessionForUser(userId, "catch-category-token");
 
     const originalQuery = db.query.bind(db);
-    (db as any).query = (sql: string) => {
+    db.query = ((sql: string) => {
       if (typeof sql === "string" && sql.startsWith("INSERT INTO categories")) {
-        return { run: () => { throw new Error("forced category insert failure"); } };
+        return {
+          run: () => {
+            throw new Error("forced category insert failure");
+          },
+        };
       }
       return originalQuery(sql);
-    };
+    }) as typeof db.query;
 
     try {
       const req = new Request("http://localhost/api/user/categories", {
@@ -177,7 +188,7 @@ describe("categories endpoint", () => {
       expect(res.status).toBe(500);
       expect(body.error).toBe("Internal Server Error");
     } finally {
-      (db as any).query = originalQuery;
+      db.query = originalQuery;
     }
   });
 
@@ -199,7 +210,7 @@ describe("categories endpoint", () => {
 
     const user2 = createUser("-2");
     const insertCategory = db.query(
-      "INSERT INTO categories (user_id, name, type) VALUES (?, ?, ?)"
+      "INSERT INTO categories (user_id, name, type) VALUES (?, ?, ?)",
     );
     insertCategory.run(user1, "Personal", "expense");
     insertCategory.run(user2, "Business", "income");

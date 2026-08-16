@@ -24,7 +24,7 @@ describe("logout endpoint", () => {
           email: "zack@example.com",
           password: "secret123!",
         }),
-      })
+      }),
     );
 
     // Login
@@ -32,8 +32,11 @@ describe("logout endpoint", () => {
       new Request("http://localhost/api/user/login", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ email: "zack@example.com", password: "secret123!" }),
-      })
+        body: JSON.stringify({
+          email: "zack@example.com",
+          password: "secret123!",
+        }),
+      }),
     );
 
     const loginBody = await loginRes.json();
@@ -42,7 +45,9 @@ describe("logout endpoint", () => {
     expect(token).toBeTruthy();
 
     // Ensure session exists
-    expect(db.query("SELECT COUNT(*) as count FROM sessions").get()?.count).toBe(1);
+    expect(
+      db.query("SELECT COUNT(*) as count FROM sessions").get()?.count,
+    ).toBe(1);
 
     // Call logout with cookie header set
     const logoutReq = new Request("http://localhost/api/user/logout", {
@@ -56,13 +61,13 @@ describe("logout endpoint", () => {
     const logoutRes = await logoutPost(logoutReq);
     const logoutBody = await logoutRes.json();
 
-    
-
     expect(logoutRes.status).toBe(200);
     expect(logoutBody.message).toBe("Logged out");
 
     // Session should be removed from DB
-    expect(db.query("SELECT COUNT(*) as count FROM sessions").get()?.count).toBe(0);
+    expect(
+      db.query("SELECT COUNT(*) as count FROM sessions").get()?.count,
+    ).toBe(0);
   });
 
   it("returns 500 when cookie header access throws", async () => {
@@ -76,15 +81,18 @@ describe("logout endpoint", () => {
           email: "will@example.com",
           password: "secret123!",
         }),
-      })
+      }),
     );
 
     const loginRes = await loginPost(
       new Request("http://localhost/api/user/login", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ email: "will@example.com", password: "secret123!" }),
-      })
+        body: JSON.stringify({
+          email: "will@example.com",
+          password: "secret123!",
+        }),
+      }),
     );
 
     const loginBody = await loginRes.json();
@@ -93,7 +101,13 @@ describe("logout endpoint", () => {
     expect(token).toBeTruthy();
 
     // Create a fake request whose headers.get throws to simulate unexpected error
-    const badReq = { headers: { get: () => { throw new Error("boom"); } } } as unknown as Request;
+    const badReq = {
+      headers: {
+        get: () => {
+          throw new Error("boom");
+        },
+      },
+    } as unknown as Request;
 
     const res = await logoutPost(badReq);
     const body = await res.json();
@@ -135,12 +149,12 @@ describe("logout endpoint", () => {
 
   it("returns 500 for failure to delete session", async () => {
     const originalQuery = db.query.bind(db);
-    (db as unknown as { query: any }).query = (sql: string) => {
+    db.query = ((sql: string) => {
       if (typeof sql === "string" && sql.includes("DELETE FROM sessions")) {
         throw new Error("database failure");
       }
       return originalQuery(sql);
-    };
+    }) as typeof db.query;
 
     try {
       const logoutReq = new Request("http://localhost/api/user/logout", {

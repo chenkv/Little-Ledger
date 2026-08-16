@@ -10,7 +10,10 @@ export async function POST(req: Request) {
 
   const contentType = req.headers.get("content-type") || "";
   if (!contentType.includes("multipart/form-data")) {
-    return NextResponse.json({ error: "Use multipart/form-data" }, { status: 415 });
+    return NextResponse.json(
+      { error: "Use multipart/form-data" },
+      { status: 415 },
+    );
   }
 
   const formData = await req.formData();
@@ -25,7 +28,10 @@ export async function POST(req: Request) {
   const isPdf = file.type.includes("application/pdf");
   const isCsv = file.type.includes("text/csv");
   if (!isPdf && !isCsv) {
-    return NextResponse.json({ error: "Unsupported file type. Please upload a PDF or CSV file." }, { status: 415 });
+    return NextResponse.json(
+      { error: "Unsupported file type. Please upload a PDF or CSV file." },
+      { status: 415 },
+    );
   }
 
   const transactions = [];
@@ -36,7 +42,7 @@ export async function POST(req: Request) {
   if (!rule) {
     return NextResponse.json(
       { error: "No parsing rule found for the provided source" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -64,7 +70,7 @@ export async function POST(req: Request) {
         console.warn("Failed to parse row:", row);
         return NextResponse.json(
           { error: "Failed to parse a transaction row." },
-          { status: 400 }
+          { status: 400 },
         );
       }
     }
@@ -79,7 +85,7 @@ export async function POST(req: Request) {
     if (!rule.csvRowPattern) {
       return NextResponse.json(
         { error: "No CSV parsing rule defined for the provided source" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -97,7 +103,7 @@ export async function POST(req: Request) {
         console.warn("Failed to parse CSV row:", row);
         return NextResponse.json(
           { error: "Failed to parse a transaction row." },
-          { status: 400 }
+          { status: 400 },
         );
       }
     }
@@ -105,13 +111,16 @@ export async function POST(req: Request) {
 
   if (transactions.length === 0) {
     return NextResponse.json(
-      { message: "Unable to parse any transactions. Please check your input parameters." },
-      { status: 400 }
+      {
+        message:
+          "Unable to parse any transactions. Please check your input parameters.",
+      },
+      { status: 400 },
     );
   }
 
   return NextResponse.json(
     { message: "Parsed transactions successfully", transactions },
-    { status: 200 }
+    { status: 200 },
   );
 }

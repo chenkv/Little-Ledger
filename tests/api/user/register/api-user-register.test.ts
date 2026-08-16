@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from "bun:test";
 process.env.LEDGER_DB_PATH = ":memory:";
 
 import db from "@/lib/db";
-import { GET as listUsers, POST as registerPost } from "@/app/api/user/register/route";
+import { POST as registerPost } from "@/app/api/user/register/route";
 
 describe("register endpoint", () => {
   beforeEach(() => {
@@ -27,7 +27,9 @@ describe("register endpoint", () => {
 
     expect(res.status).toBe(201);
     expect(body.message).toBe("User registered successfully");
-    expect(db.query("SELECT COUNT(*) as count FROM users").get()?.count).toBe(1);
+    expect(db.query("SELECT COUNT(*) as count FROM users").get()?.count).toBe(
+      1,
+    );
   });
 
   it("rejects duplicate registration emails", async () => {
@@ -64,7 +66,11 @@ describe("register endpoint", () => {
     const req = new Request("http://localhost/api/user/register", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ email: "badEmail", username: "noauth", password: "short" }),
+      body: JSON.stringify({
+        email: "badEmail",
+        username: "noauth",
+        password: "short",
+      }),
     });
 
     const res = await registerPost(req);
@@ -72,14 +78,15 @@ describe("register endpoint", () => {
 
     expect(res.status).toBe(400);
     expect(body.error).toBe(
-`✖ Please enter a valid email.
+      `✖ Please enter a valid email.
   → at email
 ✖ Be at least 8 characters long
   → at password
 ✖ Contain at least one number.
   → at password
 ✖ Contain at least one special character.
-  → at password`);
+  → at password`,
+    );
   });
 
   it("returns 500 when user insert fails", async () => {

@@ -24,7 +24,10 @@ export async function extractPdfText(arrayBuffer: ArrayBuffer) {
   // Ensure pdf.js won't attempt to load a relative worker from the
   // compiled chunk. Point it at the shipped worker file first.
   try {
-    const workerPath = path.resolve(process.cwd(), "node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs");
+    const workerPath = path.resolve(
+      process.cwd(),
+      "node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs",
+    );
     PDFParse.setWorker(`file://${workerPath}`);
   } catch (err) {
     console.warn("PDF worker path setup failed:", err);

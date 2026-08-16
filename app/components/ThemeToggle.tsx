@@ -1,20 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useTheme } from "@/app/lib/ThemeContext";
 
 export default function ThemeToggle() {
-  const [isDark, setIsDark] = useState(false);
-
-  useEffect(() => {
-    setIsDark(document.documentElement.classList.contains("dark"));
-  }, []);
-
-  const toggleTheme = () => {
-    const next = !isDark;
-    setIsDark(next);
-    document.documentElement.classList.toggle("dark", next);
-    localStorage.setItem("theme", next ? "dark" : "light");
-  };
+  const { theme, toggleTheme } = useTheme();
 
   return (
     <button
@@ -26,7 +15,7 @@ export default function ThemeToggle() {
                  hover:bg-(--surface) dark:hover:bg-(--surface-dark)
                  transition"
     >
-      {isDark ? "🌜" : "🌞"}
+      {theme === "dark" ? "☀️" : "🌙"}
     </button>
   );
 }

@@ -47,14 +47,12 @@ export default function DashboardClient() {
 
   return (
     <div className="flex min-h-screen bg-[var(--bg)] text-[var(--text)] dark:bg-[var(--bg-dark)] dark:text-[var(--text-dark)]">
-
       {/* Sidebar */}
       <Sidebar />
 
       {/* Main Content */}
       <main className="flex-1 p-6 overflow-y-auto">
         <div className="max-w-2xl mx-auto space-y-8">
-
           {/* Month Carousel */}
           <div className="flex overflow-x-auto gap-3 pb-2">
             {monthKeys.map((key) => (
@@ -63,9 +61,10 @@ export default function DashboardClient() {
                 onClick={() => setActiveMonth(key)}
                 className={`
                   px-4 py-2 rounded-lg whitespace-nowrap transition
-                  ${activeMonth === key
-                    ? "bg-[var(--accent)] text-white dark:bg-[var(--accent-dark)]"
-                    : "bg-[var(--card)] dark:bg-[var(--card-dark)]"
+                  ${
+                    activeMonth === key
+                      ? "bg-[var(--accent)] text-white dark:bg-[var(--accent-dark)]"
+                      : "bg-[var(--card)] dark:bg-[var(--card-dark)]"
                   }
                 `}
               >
@@ -99,7 +98,9 @@ export default function DashboardClient() {
                 <div key={cat.name}>
                   <div className="flex justify-between text-sm mb-1">
                     <span>{cat.name}</span>
-                    <span>${cat.spent} / ${cat.budget}</span>
+                    <span>
+                      ${cat.spent} / ${cat.budget}
+                    </span>
                   </div>
 
                   <div className="w-full h-2 bg-[var(--divider)] dark:bg-[var(--divider-dark)] rounded-full overflow-hidden">
@@ -132,7 +133,6 @@ export default function DashboardClient() {
               </div>
             ))}
           </div>
-
         </div>
       </main>
     </div>

@@ -3,18 +3,25 @@ import { beforeEach, describe, expect, it } from "bun:test";
 process.env.LEDGER_DB_PATH = ":memory:";
 
 import db from "@/lib/db";
-import { GET as financialAccountsGet, POST as financialAccountsPost } from "@/app/api/user/financial-accounts/route";
+import {
+  GET as financialAccountsGet,
+  POST as financialAccountsPost,
+} from "@/app/api/user/financial-accounts/route";
 
 function createSessionForUser(userId: number, token: string) {
   const insertSession = db.query(
-    "INSERT INTO sessions (user_id, session_token, expires_at) VALUES (?, ?, ?)"
+    "INSERT INTO sessions (user_id, session_token, expires_at) VALUES (?, ?, ?)",
   );
-  insertSession.run(userId, token, new Date(Date.now() + 1000 * 60 * 60).toISOString());
+  insertSession.run(
+    userId,
+    token,
+    new Date(Date.now() + 1000 * 60 * 60).toISOString(),
+  );
 }
 
 function createUser(suffix = "") {
   const insertUser = db.query(
-    "INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)"
+    "INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)",
   );
   const username = `account-user${suffix}`;
   const email = `account${suffix}@example.com`;
@@ -40,8 +47,18 @@ describe("financial accounts endpoint", () => {
         authorization: "Bearer valid-account-token",
       },
       body: JSON.stringify([
-        { name: "Checking", type: "checking", institution: "Test Bank", description: "Primary account" },
-        { name: "Savings", type: "savings", institution: "Test Bank", description: "Rainy day" },
+        {
+          name: "Checking",
+          type: "checking",
+          institution: "Test Bank",
+          description: "Primary account",
+        },
+        {
+          name: "Savings",
+          type: "savings",
+          institution: "Test Bank",
+          description: "Rainy day",
+        },
       ]),
     });
 
@@ -79,14 +96,21 @@ describe("financial accounts endpoint", () => {
         "content-type": "application/json",
         authorization: "Bearer invalid-body-token",
       },
-      body: JSON.stringify({ name: "Checking", type: "checking", institution: "Test Bank", description: "Primary" }),
+      body: JSON.stringify({
+        name: "Checking",
+        type: "checking",
+        institution: "Test Bank",
+        description: "Primary",
+      }),
     });
 
     const res = await financialAccountsPost(req);
     const body = await res.json();
 
     expect(res.status).toBe(400);
-    expect(body.error).toBe("Request body must be an array of financial accounts");
+    expect(body.error).toBe(
+      "Request body must be an array of financial accounts",
+    );
   });
 
   it("returns 400 when the POST account list is empty", async () => {
@@ -139,7 +163,14 @@ describe("financial accounts endpoint", () => {
         "content-type": "application/json",
         authorization: "Bearer missing-name-token",
       },
-      body: JSON.stringify([{ name: "", type: "checking", institution: "Test Bank", description: "Primary account" }]),
+      body: JSON.stringify([
+        {
+          name: "",
+          type: "checking",
+          institution: "Test Bank",
+          description: "Primary account",
+        },
+      ]),
     });
 
     const res = await financialAccountsPost(req);
@@ -159,7 +190,14 @@ describe("financial accounts endpoint", () => {
         "content-type": "application/json",
         authorization: "Bearer missing-type-token",
       },
-      body: JSON.stringify([{ name: "Checking", type: "", institution: "Test Bank", description: "Primary account" }]),
+      body: JSON.stringify([
+        {
+          name: "Checking",
+          type: "",
+          institution: "Test Bank",
+          description: "Primary account",
+        },
+      ]),
     });
 
     const res = await financialAccountsPost(req);
@@ -174,12 +212,19 @@ describe("financial accounts endpoint", () => {
     createSessionForUser(userId, "catch-account-token");
 
     const originalQuery = db.query.bind(db);
-    (db as any).query = (sql: string) => {
-      if (typeof sql === "string" && sql.startsWith("INSERT INTO financial_accounts")) {
-        return { run: () => { throw new Error("forced financial account insert failure"); } };
+    db.query = ((sql: string) => {
+      if (
+        typeof sql === "string" &&
+        sql.startsWith("INSERT INTO financial_accounts")
+      ) {
+        return {
+          run: () => {
+            throw new Error("forced financial account insert failure");
+          },
+        };
       }
       return originalQuery(sql);
-    };
+    }) as typeof db.query;
 
     try {
       const req = new Request("http://localhost/api/user/financial-accounts", {
@@ -188,7 +233,14 @@ describe("financial accounts endpoint", () => {
           "content-type": "application/json",
           authorization: "Bearer catch-account-token",
         },
-        body: JSON.stringify([{ name: "Checking", type: "checking", institution: "Test Bank", description: "Primary account" }]),
+        body: JSON.stringify([
+          {
+            name: "Checking",
+            type: "checking",
+            institution: "Test Bank",
+            description: "Primary account",
+          },
+        ]),
       });
 
       const res = await financialAccountsPost(req);
@@ -197,7 +249,7 @@ describe("financial accounts endpoint", () => {
       expect(res.status).toBe(500);
       expect(body.error).toBe("Internal Server Error");
     } finally {
-      (db as any).query = originalQuery;
+      db.query = originalQuery;
     }
   });
 
@@ -219,9 +271,15 @@ describe("financial accounts endpoint", () => {
 
     const user2 = createUser("-2");
     const insertAccount = db.query(
-      "INSERT INTO financial_accounts (user_id, name, type, institution, description) VALUES (?, ?, ?, ?, ?)"
+      "INSERT INTO financial_accounts (user_id, name, type, institution, description) VALUES (?, ?, ?, ?, ?)",
     );
-    insertAccount.run(user1, "Checking", "checking", "Test Bank", "Primary account");
+    insertAccount.run(
+      user1,
+      "Checking",
+      "checking",
+      "Test Bank",
+      "Primary account",
+    );
     insertAccount.run(user2, "Savings", "savings", "Test Bank", "Rainy day");
 
     const req = new Request("http://localhost/api/user/financial-accounts", {
