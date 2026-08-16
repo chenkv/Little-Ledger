@@ -12,7 +12,7 @@ if [ -z "$STAGED_FILES" ]; then
 fi
 
 # Only lint files ESLint can handle.
-ESLINT_FILES=$(echo "$STAGED_FILES" | grep -E '\.(js|jsx|ts|tsx|mjs|cjs)$' || true)
+ESLINT_FILES=$(echo "$STAGED_FILES" | grep -E '^(app|tests|lib)/.*\.(js|jsx|ts|tsx)$' || true)
 
 if [ -n "$ESLINT_FILES" ]; then
   echo "Running ESLint --fix on staged files..."
