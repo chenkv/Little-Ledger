@@ -18,7 +18,7 @@ describe("register endpoint", () => {
       body: JSON.stringify({
         username: "alice",
         email: "alice@example.com",
-        password: "secret123",
+        password: "secret123!",
       }),
     });
 
@@ -37,7 +37,7 @@ describe("register endpoint", () => {
       body: JSON.stringify({
         username: "dana",
         email: "dana@example.com",
-        password: "secret123",
+        password: "secret123!",
       }),
     });
 
@@ -47,7 +47,7 @@ describe("register endpoint", () => {
       body: JSON.stringify({
         username: "dana-2",
         email: "dana@example.com",
-        password: "secret123",
+        password: "secret123!",
       }),
     });
 
@@ -60,18 +60,26 @@ describe("register endpoint", () => {
     expect(body.error).toBe("User with that email already exists");
   });
 
-  it("requires email and password for registration", async () => {
+  it("invalid registration data", async () => {
     const req = new Request("http://localhost/api/user/register", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ username: "noauth" }),
+      body: JSON.stringify({ email: "badEmail", username: "noauth", password: "short" }),
     });
 
     const res = await registerPost(req);
     const body = await res.json();
 
     expect(res.status).toBe(400);
-    expect(body.error).toBe("Email and password are required");
+    expect(body.error).toBe(
+`✖ Please enter a valid email.
+  → at email
+✖ Be at least 8 characters long
+  → at password
+✖ Contain at least one number.
+  → at password
+✖ Contain at least one special character.
+  → at password`);
   });
 
   it("returns 500 when user insert fails", async () => {
@@ -93,7 +101,7 @@ describe("register endpoint", () => {
         body: JSON.stringify({
           username: "insert-fail",
           email: "insert-fail@example.com",
-          password: "secret123",
+          password: "secret123!",
         }),
       });
 
@@ -120,7 +128,7 @@ describe("register endpoint", () => {
         body: JSON.stringify({
           username: "error-user",
           email: "error-user@example.com",
-          password: "secret123",
+          password: "secret123!",
         }),
       });
 

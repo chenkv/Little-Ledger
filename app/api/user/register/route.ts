@@ -1,16 +1,21 @@
 import { NextResponse } from "next/server";
-import db from "@/lib/db"; // adjust path if needed
+import { SignupFormSchema, prettifyError } from '@/app/lib/definitions'
+import db from "@/lib/db";
 
 export async function POST(req: Request) {
   try {
     const { username, email, password } = await req.json();
 
-    // Basic validation
-    if (!email || !password) {
-      return NextResponse.json(
-        { error: "Email and password are required" },
-        { status: 400 }
-      );
+    // Basic validation (return detailed field errors when validation fails)
+    const validatedFields = SignupFormSchema.safeParse({
+      username,
+      email,
+      password,
+    });
+
+    if (!validatedFields.success) {
+      const prettyError = prettifyError(validatedFields);
+      return NextResponse.json({ error: prettyError }, { status: 400 });
     }
 
     // Check if user already exists

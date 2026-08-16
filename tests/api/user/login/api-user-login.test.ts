@@ -20,7 +20,7 @@ describe("login endpoint", () => {
         body: JSON.stringify({
           username: "bob",
           email: "bob@example.com",
-          password: "secret123",
+          password: "secret123!",
         }),
       })
     );
@@ -30,7 +30,7 @@ describe("login endpoint", () => {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         email: "bob@example.com",
-        password: "secret123",
+        password: "secret123!",
       }),
     });
 
@@ -112,7 +112,7 @@ describe("login endpoint", () => {
         body: JSON.stringify({
           username: "erin",
           email: "erin@example.com",
-          password: "secret123",
+          password: "secret123!",
         }),
       })
     );
@@ -134,7 +134,7 @@ describe("login endpoint", () => {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           email: "erin@example.com",
-          password: "secret123",
+          password: "secret123!",
         }),
       });
 
@@ -156,7 +156,7 @@ describe("login endpoint", () => {
         body: JSON.stringify({
           username: "frank",
           email: "frank@example.com",
-          password: "secret123",
+          password: "secret123!",
         }),
       })
     );
@@ -172,7 +172,7 @@ describe("login endpoint", () => {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           email: "frank@example.com",
-          password: "secret123",
+          password: "secret123!",
         }),
       });
 

@@ -37,4 +37,8 @@
 
   --accent-dark: #A3472A;
   --accent-glow-dark: #F2C7A0;
+
+  /* Danger / error text */
+  --text-danger: #9B2C2C;
+  --text-danger-dark: #F4B7B7;
 }
