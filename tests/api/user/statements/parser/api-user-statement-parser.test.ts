@@ -12,8 +12,13 @@ describe("statement parser endpoint", () => {
   beforeEach(() => {
     getUserIdFromRequestSpy?.mockRestore?.();
     extractPdfTextSpy?.mockRestore?.();
-    getUserIdFromRequestSpy = spyOn(userUtils, "getUserIdFromRequest").mockImplementation(async () => 1);
-    extractPdfTextSpy = spyOn(userUtils, "extractPdfText").mockImplementation(async () => "");
+    getUserIdFromRequestSpy = spyOn(
+      userUtils,
+      "getUserIdFromRequest",
+    ).mockImplementation(async () => 1);
+    extractPdfTextSpy = spyOn(userUtils, "extractPdfText").mockImplementation(
+      async () => "",
+    );
   });
 
   it("returns 401 when the user is not authenticated", async () => {
@@ -21,7 +26,11 @@ describe("statement parser endpoint", () => {
 
     const formData = new FormData();
     formData.set("meta", JSON.stringify({ source: "chase" }));
-    formData.set("file", new Blob(["dummy"], { type: "application/pdf" }), "statement.pdf");
+    formData.set(
+      "file",
+      new Blob(["dummy"], { type: "application/pdf" }),
+      "statement.pdf",
+    );
 
     const req = new Request("http://localhost/api/user/statements/parser", {
       method: "POST",
@@ -68,7 +77,11 @@ describe("statement parser endpoint", () => {
   it("returns 415 when the uploaded file is not a PDF or CSV", async () => {
     const formData = new FormData();
     formData.set("meta", JSON.stringify({ source: "chase" }));
-    formData.set("file", new Blob(["dummy"], { type: "application/json" }), "statement.json");
+    formData.set(
+      "file",
+      new Blob(["dummy"], { type: "application/json" }),
+      "statement.json",
+    );
 
     const req = new Request("http://localhost/api/user/statements/parser", {
       method: "POST",
@@ -79,13 +92,19 @@ describe("statement parser endpoint", () => {
     const body = await res.json();
 
     expect(res.status).toBe(415);
-    expect(body.error).toBe("Unsupported file type. Please upload a PDF or CSV file.");
+    expect(body.error).toBe(
+      "Unsupported file type. Please upload a PDF or CSV file.",
+    );
   });
 
   it("returns 400 when the provided source has no parse rule", async () => {
     const formData = new FormData();
     formData.set("meta", JSON.stringify({ source: "unknown-bank" }));
-    formData.set("file", new Blob(["dummy"], { type: "application/pdf" }), "statement.pdf");
+    formData.set(
+      "file",
+      new Blob(["dummy"], { type: "application/pdf" }),
+      "statement.pdf",
+    );
 
     const req = new Request("http://localhost/api/user/statements/parser", {
       method: "POST",
@@ -100,13 +119,18 @@ describe("statement parser endpoint", () => {
   });
 
   it("parses a PDF statement using a mocked extractPdfText implementation", async () => {
-    extractPdfTextSpy.mockImplementationOnce(async () =>
-      "Transaction Merchant Name\n08/05 Some merchant 12.00\n08/06 Another store 45.50\nYear-to-date"
+    extractPdfTextSpy.mockImplementationOnce(
+      async () =>
+        "Transaction Merchant Name\n08/05 Some merchant 12.00\n08/06 Another store 45.50\nYear-to-date",
     );
 
     const formData = new FormData();
     formData.set("meta", JSON.stringify({ source: "chase" }));
-    formData.set("file", new Blob(["dummy"], { type: "application/pdf" }), "statement.pdf");
+    formData.set(
+      "file",
+      new Blob(["dummy"], { type: "application/pdf" }),
+      "statement.pdf",
+    );
 
     const req = new Request("http://localhost/api/user/statements/parser", {
       method: "POST",
@@ -132,13 +156,18 @@ describe("statement parser endpoint", () => {
   });
 
   it("parses an American Express PDF statement using a mocked extractPdfText implementation", async () => {
-    extractPdfTextSpy.mockImplementationOnce(async () =>
-      "New Charges\n08/05/26  Some merchant  $12.00\n08/06/26  Other merchant  $45.50\nSummary\nFees"
+    extractPdfTextSpy.mockImplementationOnce(
+      async () =>
+        "New Charges\n08/05/26  Some merchant  $12.00\n08/06/26  Other merchant  $45.50\nSummary\nFees",
     );
 
     const formData = new FormData();
     formData.set("meta", JSON.stringify({ source: "american-express" }));
-    formData.set("file", new Blob(["dummy"], { type: "application/pdf" }), "statement.pdf");
+    formData.set(
+      "file",
+      new Blob(["dummy"], { type: "application/pdf" }),
+      "statement.pdf",
+    );
 
     const req = new Request("http://localhost/api/user/statements/parser", {
       method: "POST",
@@ -164,13 +193,18 @@ describe("statement parser endpoint", () => {
   });
 
   it("parses a Discover PDF statement using a mocked extractPdfText implementation", async () => {
-    extractPdfTextSpy.mockImplementationOnce(async () =>
-      "Transactions\n05/01/26 05/02/26 Some merchant\n$ 12.00\n06/01/26 06/02/26 Other merchant\n$ 45.50\nStatement Balance is the total"
+    extractPdfTextSpy.mockImplementationOnce(
+      async () =>
+        "Transactions\n05/01/26 05/02/26 Some merchant\n$ 12.00\n06/01/26 06/02/26 Other merchant\n$ 45.50\nStatement Balance is the total",
     );
 
     const formData = new FormData();
     formData.set("meta", JSON.stringify({ source: "discover" }));
-    formData.set("file", new Blob(["dummy"], { type: "application/pdf" }), "statement.pdf");
+    formData.set(
+      "file",
+      new Blob(["dummy"], { type: "application/pdf" }),
+      "statement.pdf",
+    );
 
     const req = new Request("http://localhost/api/user/statements/parser", {
       method: "POST",
@@ -196,13 +230,18 @@ describe("statement parser endpoint", () => {
   });
 
   it("returns 400 when the PDF contains an invalid transaction row", async () => {
-    extractPdfTextSpy.mockImplementationOnce(async () =>
-      "Transaction Merchant Name\n05/01/02 Description $ 15.30\nYear-to-date"
+    extractPdfTextSpy.mockImplementationOnce(
+      async () =>
+        "Transaction Merchant Name\n05/01/02 Description $ 15.30\nYear-to-date",
     );
 
     const formData = new FormData();
     formData.set("meta", JSON.stringify({ source: "discover" }));
-    formData.set("file", new Blob(["dummy"], { type: "application/pdf" }), "statement.pdf");
+    formData.set(
+      "file",
+      new Blob(["dummy"], { type: "application/pdf" }),
+      "statement.pdf",
+    );
 
     const req = new Request("http://localhost/api/user/statements/parser", {
       method: "POST",
@@ -217,13 +256,18 @@ describe("statement parser endpoint", () => {
   });
 
   it("returns 400 when the PDF contains no parsable transaction rows", async () => {
-    extractPdfTextSpy.mockImplementationOnce(async () =>
-      "Transaction Merchant Name\ninvalid-row-content\nYear-to-date"
+    extractPdfTextSpy.mockImplementationOnce(
+      async () =>
+        "Transaction Merchant Name\ninvalid-row-content\nYear-to-date",
     );
 
     const formData = new FormData();
     formData.set("meta", JSON.stringify({ source: "chase" }));
-    formData.set("file", new Blob(["dummy"], { type: "application/pdf" }), "statement.pdf");
+    formData.set(
+      "file",
+      new Blob(["dummy"], { type: "application/pdf" }),
+      "statement.pdf",
+    );
 
     const req = new Request("http://localhost/api/user/statements/parser", {
       method: "POST",
@@ -234,7 +278,9 @@ describe("statement parser endpoint", () => {
     const body = await res.json();
 
     expect(res.status).toBe(400);
-    expect(body.message).toBe("Unable to parse any transactions. Please check your input parameters.");
+    expect(body.message).toBe(
+      "Unable to parse any transactions. Please check your input parameters.",
+    );
   });
 
   it("parses a CSV statement for an institution with a CSV rule", async () => {
@@ -246,7 +292,11 @@ describe("statement parser endpoint", () => {
 
     const formData = new FormData();
     formData.set("meta", JSON.stringify({ source: "american-express" }));
-    formData.set("file", new Blob([csvText], { type: "text/csv" }), "statement.csv");
+    formData.set(
+      "file",
+      new Blob([csvText], { type: "text/csv" }),
+      "statement.csv",
+    );
 
     const req = new Request("http://localhost/api/user/statements/parser", {
       method: "POST",
@@ -279,7 +329,11 @@ describe("statement parser endpoint", () => {
 
     const formData = new FormData();
     formData.set("meta", JSON.stringify({ source: "chase" }));
-    formData.set("file", new Blob([csvText], { type: "text/csv" }), "statement.csv");
+    formData.set(
+      "file",
+      new Blob([csvText], { type: "text/csv" }),
+      "statement.csv",
+    );
 
     const req = new Request("http://localhost/api/user/statements/parser", {
       method: "POST",
@@ -290,7 +344,9 @@ describe("statement parser endpoint", () => {
     const body = await res.json();
 
     expect(res.status).toBe(500);
-    expect(body.error).toBe("No CSV parsing rule defined for the provided source");
+    expect(body.error).toBe(
+      "No CSV parsing rule defined for the provided source",
+    );
   });
 
   it("fail to parse CSV row", async () => {
@@ -302,7 +358,11 @@ describe("statement parser endpoint", () => {
 
     const formData = new FormData();
     formData.set("meta", JSON.stringify({ source: "discover" }));
-    formData.set("file", new Blob([csvText], { type: "text/csv" }), "statement.csv");
+    formData.set(
+      "file",
+      new Blob([csvText], { type: "text/csv" }),
+      "statement.csv",
+    );
 
     const req = new Request("http://localhost/api/user/statements/parser", {
       method: "POST",

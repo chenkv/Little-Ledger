@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { SignupFormSchema, prettifyError } from '@/app/lib/definitions'
+import { SignupFormSchema, prettifyError } from "@/app/lib/definitions";
 import db from "@/lib/db";
 
 export async function POST(req: Request) {
@@ -19,40 +19,40 @@ export async function POST(req: Request) {
     }
 
     // Check if user already exists
-    const existing = db
-      .query("SELECT * FROM users WHERE email = ?")
-      .get(email);
+    const existing = db.query("SELECT * FROM users WHERE email = ?").get(email);
 
     if (existing) {
       return NextResponse.json(
         { error: "User with that email already exists" },
-        { status: 409 }
+        { status: 409 },
       );
     }
 
     const passwordHash = await Bun.password.hash(password);
 
     // Insert user
-    const res = db.query(
-      "INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)"
-    ).run(username || null, email, passwordHash);
+    const res = db
+      .query(
+        "INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)",
+      )
+      .run(username || null, email, passwordHash);
 
     if (!res) {
       return NextResponse.json(
         { error: "Failed to register user" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
     return NextResponse.json(
       { message: "User registered successfully" },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (err) {
     console.error("Register error:", err);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

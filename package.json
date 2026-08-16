@@ -6,13 +6,17 @@
     "dev": "bun --bun next dev",
     "build": "bun --bun next build",
     "start": "bun --bun next start",
-    "lint": "eslint",
+    "lint": "eslint \"app/**/*.{js,jsx,ts,tsx}\" \"tests/**/*.{js,jsx,ts,tsx}\" \"lib/**/*.{js,jsx,ts,tsx}\"",
+    "format": "prettier --write .",
     "test": "bun test",
-    "test:coverage": "bun test --coverage"
+    "hooks:install": "git config core.hooksPath .githooks && chmod +x .githooks/pre-commit",
+    "test:coverage": "bun test --coverage",
+    "init": "bun run hooks:install"
   },
   "dependencies": {
     "next": "16.2.2",
     "pdf-parse": "~2.4.5",
+    "prettier": "^3.9.6",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "zod": "^4.4.3"
@@ -26,7 +30,8 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.2",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "@types/bun": "latest"
   },
   "ignoreScripts": [
     "sharp",

@@ -9,7 +9,9 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const user = db.query("SELECT id, username, email FROM users WHERE id = ?").get(userId);
+    const user = db
+      .query("SELECT id, username, email FROM users WHERE id = ?")
+      .get(userId);
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -24,12 +26,13 @@ export async function GET(req: Request) {
           email: user.email,
         },
       },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error("Session check error:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 },
+    );
   }
 }
-
-    

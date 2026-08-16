@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, mock } from "bun:test";
+import { beforeEach, describe, expect, it } from "bun:test";
 
 process.env.LEDGER_DB_PATH = ":memory:";
 
@@ -22,7 +22,7 @@ describe("login endpoint", () => {
           email: "bob@example.com",
           password: "secret123!",
         }),
-      })
+      }),
     );
 
     const req = new Request("http://localhost/api/user/login", {
@@ -41,7 +41,9 @@ describe("login endpoint", () => {
     expect(body.message).toBe("Login successful");
     expect(body.session?.token).toBeTruthy();
     expect(body.session?.expiresAt).toBeTruthy();
-    expect(db.query("SELECT COUNT(*) as count FROM sessions").get()?.count).toBe(1);
+    expect(
+      db.query("SELECT COUNT(*) as count FROM sessions").get()?.count,
+    ).toBe(1);
   });
 
   it("rejects invalid login credentials", async () => {
@@ -54,7 +56,7 @@ describe("login endpoint", () => {
           email: "cara@example.com",
           password: "correct-password",
         }),
-      })
+      }),
     );
 
     const req = new Request("http://localhost/api/user/login", {
@@ -114,7 +116,7 @@ describe("login endpoint", () => {
           email: "erin@example.com",
           password: "secret123!",
         }),
-      })
+      }),
     );
 
     const originalQuery = db.query.bind(db);
@@ -158,7 +160,7 @@ describe("login endpoint", () => {
           email: "frank@example.com",
           password: "secret123!",
         }),
-      })
+      }),
     );
 
     const originalVerify = Bun.password.verify;

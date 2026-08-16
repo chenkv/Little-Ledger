@@ -9,7 +9,11 @@ export async function POST(req: Request) {
     try {
       const cookieStore = await cookies();
       token = cookieStore.get("session_token")?.value ?? null;
-    } catch (e) {
+    } catch (err) {
+      console.warn(
+        "Failed to access cookies in logout route, defaulting to header:",
+        err,
+      );
       // cookies() may throw when called outside a Next request scope (tests).
       const header = req.headers.get("cookie") ?? "";
       const match = header.match(/(?:^|; )session_token=([^;]+)/);
@@ -23,13 +27,13 @@ export async function POST(req: Request) {
         console.error("Failed to delete session during logout:", err);
         return NextResponse.json(
           { error: "Failed to log out" },
-          { status: 500 }
+          { status: 500 },
         );
       }
     } else {
       return NextResponse.json(
         { error: "No session token found" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -46,6 +50,9 @@ export async function POST(req: Request) {
     return res;
   } catch (err) {
     console.error("Logout error:", err);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
   }
 }

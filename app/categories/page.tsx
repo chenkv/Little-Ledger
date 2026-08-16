@@ -43,11 +43,7 @@ export default function CategoriesPage() {
     e.preventDefault();
     if (!editing) return;
 
-    setCategories(
-      categories.map((c) =>
-        c.id === editing.id ? editing : c
-      )
-    );
+    setCategories(categories.map((c) => (c.id === editing.id ? editing : c)));
 
     setEditing(null);
   }
@@ -58,7 +54,6 @@ export default function CategoriesPage() {
 
       <main className="flex-1 p-6 overflow-y-auto">
         <div className="max-w-2xl mx-auto space-y-10">
-
           {/* Page Title */}
           <h1 className="text-3xl font-bold">Categories</h1>
 
@@ -173,7 +168,6 @@ export default function CategoriesPage() {
               </div>
             </div>
           )}
-
         </div>
       </main>
     </div>

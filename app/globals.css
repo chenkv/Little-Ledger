@@ -4,41 +4,41 @@
 
 :root {
   /* Light Mode — Cabin in the Forest */
-  --bg: #F7F3EE;
-  --surface: #FFFDF9;
-  --card: #F2EBE3;
-  --border: #E0D6C8;
-  --divider: #E6DDD2;
+  --bg: #f7f3ee;
+  --surface: #fffdf9;
+  --card: #f2ebe3;
+  --border: #e0d6c8;
+  --divider: #e6ddd2;
 
-  --text: #3B2F2F;
-  --text-secondary: #5A4A4A;
-  --text-muted: #7A6A6A;
+  --text: #3b2f2f;
+  --text-secondary: #5a4a4a;
+  --text-muted: #7a6a6a;
 
-  --primary: #8B5E3C;
-  --primary-hover: #7A5234;
+  --primary: #8b5e3c;
+  --primary-hover: #7a5234;
 
-  --accent: #6F7F4F;
-  --accent-hover: #5E6C42;
-  --accent-subtle: #DDE4D1;
+  --accent: #6f7f4f;
+  --accent-hover: #5e6c42;
+  --accent-subtle: #dde4d1;
 
   /* Dark Mode — Cozy Cabin at Night */
-  --bg-dark: #1E1A17;
-  --surface-dark: #2A2420;
-  --card-dark: #3A302A;
-  --border-dark: #4A3F38;
-  --divider-dark: #4F443D;
+  --bg-dark: #1e1a17;
+  --surface-dark: #2a2420;
+  --card-dark: #3a302a;
+  --border-dark: #4a3f38;
+  --divider-dark: #4f443d;
 
-  --text-dark: #F5EDE6;
-  --text-secondary-dark: #D8C7BD;
-  --text-muted-dark: #A89A92;
+  --text-dark: #f5ede6;
+  --text-secondary-dark: #d8c7bd;
+  --text-muted-dark: #a89a92;
 
-  --primary-dark: #D27A3F;
-  --primary-hover-dark: #BB6935;
+  --primary-dark: #d27a3f;
+  --primary-hover-dark: #bb6935;
 
-  --accent-dark: #A3472A;
-  --accent-glow-dark: #F2C7A0;
+  --accent-dark: #a3472a;
+  --accent-glow-dark: #f2c7a0;
 
   /* Danger / error text */
-  --text-danger: #9B2C2C;
-  --text-danger-dark: #F4B7B7;
+  --text-danger: #9b2c2c;
+  --text-danger-dark: #f4b7b7;
 }

@@ -22,7 +22,8 @@ export const americanExpressRule: StatementSourceRule = {
   label: "American Express",
   sectionPattern: /New Charges[\s]*?Summary([\s\S]*?)Fees/i,
   transactionRowsPattern: /\d{2}\/\d{2}\/\d{2}[\s\S]*?\$[\d,]+\.\d{2}/g,
-  transactionRowPattern: /(\d{2}\/\d{2}\/\d{2})[\s]*?([\s\S]*?)\$([\d,]+\.\d{2})/i,
+  transactionRowPattern:
+    /(\d{2}\/\d{2}\/\d{2})[\s]*?([\s\S]*?)\$([\d,]+\.\d{2})/i,
   csvRowPattern: /(\d{2}\/\d{2}\/\d{4}),([\s\S]*?),([-\d,]+\.\d{2})/i,
   skipCsvHeader: true,
   normalizeDescription: (value: string) => value.trim().replace(/\s+/g, " "),
@@ -32,9 +33,12 @@ export const discoverRule: StatementSourceRule = {
   id: "discover",
   label: "Discover",
   sectionPattern: /Transactions([\s\S]*?)Statement Balance is the total/i,
-  transactionRowsPattern: /\d{2}\/\d{2}\/\d{2}(?:(?!^\d{2}\/\d{2}\/\d{2})[\s\S])*?\$ [\d,]+\.\d{2}/gm,
-  transactionRowPattern: /(\d{2}\/\d{2}\/\d{2})[\s]+(?:\d{2}\/\d{2}\/\d{2})([\s\S]*?)\$[\s]+([\d,]+.\d{2})/i,
-  csvRowPattern: /(\d{2}\/\d{2}\/\d{4}),(?:\d{2}\/\d{2}\/\d{4}),"([\s\S]*?)",([-\d,]+\.\d{2}),"([\s\S]*?)"/i,
+  transactionRowsPattern:
+    /\d{2}\/\d{2}\/\d{2}(?:(?!^\d{2}\/\d{2}\/\d{2})[\s\S])*?\$ [\d,]+\.\d{2}/gm,
+  transactionRowPattern:
+    /(\d{2}\/\d{2}\/\d{2})[\s]+(?:\d{2}\/\d{2}\/\d{2})([\s\S]*?)\$[\s]+([\d,]+.\d{2})/i,
+  csvRowPattern:
+    /(\d{2}\/\d{2}\/\d{4}),(?:\d{2}\/\d{2}\/\d{4}),"([\s\S]*?)",([-\d,]+\.\d{2}),"([\s\S]*?)"/i,
   skipCsvHeader: true,
   normalizeDescription: (value: string) => value.trim().replace(/\s+/g, " "),
 };
@@ -50,8 +54,8 @@ export const chaseRule: StatementSourceRule = {
 
 const rules: Record<string, StatementSourceRule> = {
   "american-express": americanExpressRule,
-  "discover": discoverRule,
-  "chase": chaseRule,
+  discover: discoverRule,
+  chase: chaseRule,
 };
 
 export function getRule(source?: string): StatementSourceRule | null {
