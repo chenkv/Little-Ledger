@@ -66,7 +66,6 @@ export async function POST(req: Request) {
     };
 
     const res = NextResponse.json(body);
-    // Set HttpOnly cookie for session token. Client JS cannot read this cookie.
     res.cookies.set("session_token", sessionToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV !== "test",
