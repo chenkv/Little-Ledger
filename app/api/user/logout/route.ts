@@ -7,7 +7,7 @@ export async function POST(req: Request) {
     let token: string | null = null;
 
     try {
-      const cookieStore = cookies();
+      const cookieStore = await cookies();
       token = cookieStore.get("session_token")?.value ?? null;
     } catch (e) {
       // cookies() may throw when called outside a Next request scope (tests).
