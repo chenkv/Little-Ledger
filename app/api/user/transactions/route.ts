@@ -129,14 +129,57 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const searchParams = new URL(req.url).searchParams;
+  const page = Number(searchParams.get("page") ?? "1");
+  const limit = Number(searchParams.get("limit") ?? "20");
+
+  if (
+    !Number.isInteger(page) ||
+    page < 1 ||
+    !Number.isInteger(limit) ||
+    limit < 1 ||
+    limit > 100
+  ) {
+    return NextResponse.json(
+      {
+        error:
+          "page must be a positive integer and limit must be an integer between 1 and 100",
+      },
+      { status: 400 },
+    );
+  }
+
+  const offset = (page - 1) * limit;
+  const total = (
+    db
+      .query(
+        `SELECT COUNT(*) as count FROM transactions t
+        JOIN financial_accounts fa ON t.financial_account_id = fa.id
+        WHERE fa.user_id = ?`,
+      )
+      .get(userId) as { count: number }
+  ).count;
+
   const transactions = db
     .query(
       `SELECT t.* FROM transactions t
       JOIN financial_accounts fa ON t.financial_account_id = fa.id
       WHERE fa.user_id = ?
-      ORDER BY t.date DESC`,
+      ORDER BY t.date DESC
+      LIMIT ? OFFSET ?`,
     )
-    .all(userId);
+    .all(userId, limit, offset);
 
-  return NextResponse.json({ transactions }, { status: 200 });
+  return NextResponse.json(
+    {
+      transactions,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    },
+    { status: 200 },
+  );
 }
