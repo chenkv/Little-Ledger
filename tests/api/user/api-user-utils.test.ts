@@ -106,6 +106,184 @@ describe("user utils", () => {
     expect(result).toBe(userId);
   });
 
+  it("returns null when session_token cookie is missing", async () => {
+    const req = new Request("http://localhost", {
+      method: "GET",
+    });
+
+    const result = await utils.getUserIdFromRequest(req);
+
+    expect(result).toBeNull();
+  });
+
+  it("returns null when session_token cookie does not match a session", async () => {
+    const req = new Request("http://localhost", {
+      method: "GET",
+      headers: {
+        cookie: "session_token=non-existent-cookie-token",
+      },
+    });
+
+    const result = await utils.getUserIdFromRequest(req);
+
+    expect(result).toBeNull();
+  });
+
+  it("returns null when session_token cookie contains an expired session", async () => {
+    const insertUser = db.query(
+      "INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)",
+    );
+
+    const userResult = insertUser.run(
+      "cookie-expired",
+      "cookie-expired@example.com",
+      "hash",
+    );
+
+    const userId = userResult.lastInsertRowid as number;
+
+    const insertSession = db.query(
+      "INSERT INTO sessions (user_id, session_token, expires_at) VALUES (?, ?, ?)",
+    );
+
+    insertSession.run(
+      userId,
+      "cookie-expired-token",
+      new Date(Date.now() - 1000).toISOString(),
+    );
+
+    const req = new Request("http://localhost", {
+      method: "GET",
+      headers: {
+        cookie: "session_token=cookie-expired-token",
+      },
+    });
+
+    const result = await utils.getUserIdFromRequest(req);
+
+    expect(result).toBeNull();
+  });
+
+  it("returns the user id for a valid session_token cookie", async () => {
+    const insertUser = db.query(
+      "INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)",
+    );
+
+    const userResult = insertUser.run(
+      "cookie-valid",
+      "cookie-valid@example.com",
+      "hash",
+    );
+
+    const userId = userResult.lastInsertRowid as number;
+
+    const insertSession = db.query(
+      "INSERT INTO sessions (user_id, session_token, expires_at) VALUES (?, ?, ?)",
+    );
+
+    insertSession.run(
+      userId,
+      "cookie-valid-token",
+      new Date(Date.now() + 1000 * 60 * 60).toISOString(),
+    );
+
+    const req = new Request("http://localhost", {
+      method: "GET",
+      headers: {
+        cookie: "session_token=cookie-valid-token",
+      },
+    });
+
+    const result = await utils.getUserIdFromRequest(req);
+
+    expect(result).toBe(userId);
+  });
+
+  it("falls back to bearer authorization when session_token cookie is missing", async () => {
+    const insertUser = db.query(
+      "INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)",
+    );
+
+    const userResult = insertUser.run(
+      "bearer-fallback",
+      "bearer-fallback@example.com",
+      "hash",
+    );
+
+    const userId = userResult.lastInsertRowid as number;
+
+    const insertSession = db.query(
+      "INSERT INTO sessions (user_id, session_token, expires_at) VALUES (?, ?, ?)",
+    );
+
+    insertSession.run(
+      userId,
+      "bearer-fallback-token",
+      new Date(Date.now() + 1000 * 60 * 60).toISOString(),
+    );
+
+    const req = new Request("http://localhost", {
+      method: "GET",
+      headers: {
+        authorization: "Bearer bearer-fallback-token",
+      },
+    });
+
+    const result = await utils.getUserIdFromRequest(req);
+
+    expect(result).toBe(userId);
+  });
+
+  it("prefers the session_token cookie over bearer authorization", async () => {
+    const insertUser = db.query(
+      "INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)",
+    );
+
+    const cookieUserResult = insertUser.run(
+      "cookie-user",
+      "cookie-user@example.com",
+      "hash",
+    );
+
+    const cookieUserId = cookieUserResult.lastInsertRowid as number;
+
+    const bearerUserResult = insertUser.run(
+      "bearer-user",
+      "bearer-user@example.com",
+      "hash",
+    );
+
+    const bearerUserId = bearerUserResult.lastInsertRowid as number;
+
+    const insertSession = db.query(
+      "INSERT INTO sessions (user_id, session_token, expires_at) VALUES (?, ?, ?)",
+    );
+
+    insertSession.run(
+      cookieUserId,
+      "cookie-token",
+      new Date(Date.now() + 1000 * 60 * 60).toISOString(),
+    );
+
+    insertSession.run(
+      bearerUserId,
+      "bearer-token",
+      new Date(Date.now() + 1000 * 60 * 60).toISOString(),
+    );
+
+    const req = new Request("http://localhost", {
+      method: "GET",
+      headers: {
+        cookie: "session_token=cookie-token",
+        authorization: "Bearer bearer-token",
+      },
+    });
+
+    const result = await utils.getUserIdFromRequest(req);
+
+    expect(result).toBe(cookieUserId);
+  });
+
   it("extracts text from a minimal PDF buffer", async () => {
     const buffer = createPdfArrayBuffer("Hello");
     const extracted = await utils.extractPdfText(buffer);
