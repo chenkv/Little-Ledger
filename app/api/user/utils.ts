@@ -1,12 +1,34 @@
 import { PDFParse } from "pdf-parse";
+import { cookies } from "next/headers";
 import path from "path";
 import db from "@/lib/db";
 
 export async function getUserIdFromRequest(req: Request) {
-  const authHeader = req.headers.get("authorization");
-  if (!authHeader || !authHeader.startsWith("Bearer ")) return null;
+  const cookieHeader = req.headers.get("cookie");
 
-  const token = authHeader.slice("Bearer ".length).trim();
+  let token: string | null = null;
+
+  if (cookieHeader) {
+    const cookies = cookieHeader.split(";");
+
+    for (const cookie of cookies) {
+      const [name, ...valueParts] = cookie.trim().split("=");
+
+      if (name === "session_token") {
+        token = valueParts.join("=");
+        break;
+      }
+    }
+  }
+
+  if (!token) {
+    const authHeader = req.headers.get("authorization");
+
+    if (authHeader?.startsWith("Bearer ")) {
+      token = authHeader.slice("Bearer ".length).trim();
+    }
+  }
+
   if (!token) return null;
 
   const session = db
