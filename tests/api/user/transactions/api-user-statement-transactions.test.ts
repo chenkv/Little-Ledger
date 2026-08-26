@@ -59,25 +59,22 @@ describe("transactions endpoint", () => {
     const accountId = createFinancialAccount(userId);
     createSessionForUser(userId, "valid-session-token");
 
-    const req = new Request(
-      "http://localhost/api/user/statements/transactions",
-      {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          authorization: "Bearer valid-session-token",
-        },
-        body: JSON.stringify([
-          {
-            financial_account_id: accountId,
-            date: "2026-08-05",
-            description: "Coffee purchase",
-            amount: 4.5,
-            category_id: null,
-          },
-        ]),
+    const req = new Request("http://localhost/api/user/transactions", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: "Bearer valid-session-token",
       },
-    );
+      body: JSON.stringify([
+        {
+          financial_account_id: accountId,
+          date: "2026-08-05",
+          description: "Coffee purchase",
+          amount: 4.5,
+          category_id: null,
+        },
+      ]),
+    });
 
     const res = await transactionsPost(req);
     const body = await res.json();
@@ -101,32 +98,29 @@ describe("transactions endpoint", () => {
     const accountId = createFinancialAccount(userId);
     createSessionForUser(userId, "rollback-session-token");
 
-    const req = new Request(
-      "http://localhost/api/user/statements/transactions",
-      {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          authorization: "Bearer rollback-session-token",
-        },
-        body: JSON.stringify([
-          {
-            financial_account_id: accountId,
-            date: "2026-08-05",
-            description: "Valid transaction",
-            amount: 10.0,
-            category_id: null,
-          },
-          {
-            financial_account_id: accountId,
-            date: "2026-08-06",
-            description: "Invalid transaction",
-            amount: "not-a-number", // This will cause an error
-            category_id: null,
-          },
-        ]),
+    const req = new Request("http://localhost/api/user/transactions", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: "Bearer rollback-session-token",
       },
-    );
+      body: JSON.stringify([
+        {
+          financial_account_id: accountId,
+          date: "2026-08-05",
+          description: "Valid transaction",
+          amount: 10.0,
+          category_id: null,
+        },
+        {
+          financial_account_id: accountId,
+          date: "2026-08-06",
+          description: "Invalid transaction",
+          amount: "not-a-number", // This will cause an error
+          category_id: null,
+        },
+      ]),
+    });
 
     const res = await transactionsPost(req);
     const body = await res.json();
@@ -144,25 +138,22 @@ describe("transactions endpoint", () => {
     const userId = createUser();
     createSessionForUser(userId, "valid-account-token");
 
-    const req = new Request(
-      "http://localhost/api/user/statements/transactions",
-      {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          authorization: "Bearer valid-account-token",
-        },
-        body: JSON.stringify([
-          {
-            financial_account_id: "wrong", // Non-existent account
-            date: "2026-08-05",
-            description: "Coffee purchase",
-            amount: 4.5,
-            category_id: null,
-          },
-        ]),
+    const req = new Request("http://localhost/api/user/transactions", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: "Bearer valid-account-token",
       },
-    );
+      body: JSON.stringify([
+        {
+          financial_account_id: "wrong", // Non-existent account
+          date: "2026-08-05",
+          description: "Coffee purchase",
+          amount: 4.5,
+          category_id: null,
+        },
+      ]),
+    });
 
     const res = await transactionsPost(req);
     const body = await res.json();
@@ -175,24 +166,21 @@ describe("transactions endpoint", () => {
     const userId = createUser();
     createSessionForUser(userId, "valid-account-token");
 
-    const req = new Request(
-      "http://localhost/api/user/statements/transactions",
-      {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          authorization: "Bearer valid-account-token",
-        },
-        body: JSON.stringify([
-          {
-            financial_account_id: 1,
-            description: "Coffee purchase",
-            amount: 4.5,
-            category_id: null,
-          },
-        ]),
+    const req = new Request("http://localhost/api/user/transactions", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: "Bearer valid-account-token",
       },
-    );
+      body: JSON.stringify([
+        {
+          financial_account_id: 1,
+          description: "Coffee purchase",
+          amount: 4.5,
+          category_id: null,
+        },
+      ]),
+    });
 
     const res = await transactionsPost(req);
     const body = await res.json();
@@ -205,25 +193,22 @@ describe("transactions endpoint", () => {
     const userId = createUser();
     createSessionForUser(userId, "valid-account-token");
 
-    const req = new Request(
-      "http://localhost/api/user/statements/transactions",
-      {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          authorization: "Bearer valid-account-token",
-        },
-        body: JSON.stringify([
-          {
-            financial_account_id: 1,
-            date: "2026-08-05",
-            description: "Coffee purchase",
-            amount: "A string instead of a number",
-            category_id: null,
-          },
-        ]),
+    const req = new Request("http://localhost/api/user/transactions", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: "Bearer valid-account-token",
       },
-    );
+      body: JSON.stringify([
+        {
+          financial_account_id: 1,
+          date: "2026-08-05",
+          description: "Coffee purchase",
+          amount: "A string instead of a number",
+          category_id: null,
+        },
+      ]),
+    });
 
     const res = await transactionsPost(req);
     const body = await res.json();
@@ -233,14 +218,11 @@ describe("transactions endpoint", () => {
   });
 
   it("returns 401 when authorization is missing", async () => {
-    const req = new Request(
-      "http://localhost/api/user/statements/transactions",
-      {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify([]),
-      },
-    );
+    const req = new Request("http://localhost/api/user/transactions", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify([]),
+    });
 
     const res = await transactionsPost(req);
     const body = await res.json();
@@ -254,21 +236,18 @@ describe("transactions endpoint", () => {
     const accountId = createFinancialAccount(userId);
     createSessionForUser(userId, "test-session-token");
 
-    const req = new Request(
-      "http://localhost/api/user/statements/transactions",
-      {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          authorization: "Bearer test-session-token",
-        },
-        body: JSON.stringify({
-          financial_account_id: accountId,
-          date: "2026-08-05",
-          amount: 10.0,
-        }),
+    const req = new Request("http://localhost/api/user/transactions", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: "Bearer test-session-token",
       },
-    );
+      body: JSON.stringify({
+        financial_account_id: accountId,
+        date: "2026-08-05",
+        amount: 10.0,
+      }),
+    });
 
     const res = await transactionsPost(req);
     const body = await res.json();
@@ -282,17 +261,14 @@ describe("transactions endpoint", () => {
     createFinancialAccount(userId);
     createSessionForUser(userId, "empty-list-token");
 
-    const req = new Request(
-      "http://localhost/api/user/statements/transactions",
-      {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          authorization: "Bearer empty-list-token",
-        },
-        body: JSON.stringify([]),
+    const req = new Request("http://localhost/api/user/transactions", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: "Bearer empty-list-token",
       },
-    );
+      body: JSON.stringify([]),
+    });
 
     const res = await transactionsPost(req);
     const body = await res.json();
@@ -305,17 +281,14 @@ describe("transactions endpoint", () => {
     const userId = createUser();
     createSessionForUser(userId, "invalid-item-token");
 
-    const req = new Request(
-      "http://localhost/api/user/statements/transactions",
-      {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          authorization: "Bearer invalid-item-token",
-        },
-        body: JSON.stringify([null]),
+    const req = new Request("http://localhost/api/user/transactions", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: "Bearer invalid-item-token",
       },
-    );
+      body: JSON.stringify([null]),
+    });
 
     const res = await transactionsPost(req);
     const body = await res.json();
@@ -337,25 +310,22 @@ describe("transactions endpoint", () => {
     }) as typeof db.query;
 
     try {
-      const req = new Request(
-        "http://localhost/api/user/statements/transactions",
-        {
-          method: "POST",
-          headers: {
-            "content-type": "application/json",
-            authorization: "Bearer no-result-token",
-          },
-          body: JSON.stringify([
-            {
-              financial_account_id: accountId,
-              date: "2026-08-05",
-              description: "Broken insert",
-              amount: 12.0,
-              category_id: null,
-            },
-          ]),
+      const req = new Request("http://localhost/api/user/transactions", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          authorization: "Bearer no-result-token",
         },
-      );
+        body: JSON.stringify([
+          {
+            financial_account_id: accountId,
+            date: "2026-08-05",
+            description: "Broken insert",
+            amount: 12.0,
+            category_id: null,
+          },
+        ]),
+      });
 
       const res = await transactionsPost(req);
       const body = await res.json();
@@ -384,25 +354,22 @@ describe("transactions endpoint", () => {
     }) as typeof db.query;
 
     try {
-      const req = new Request(
-        "http://localhost/api/user/statements/transactions",
-        {
-          method: "POST",
-          headers: {
-            "content-type": "application/json",
-            authorization: "Bearer unexpected-error-token",
-          },
-          body: JSON.stringify([
-            {
-              financial_account_id: accountId,
-              date: "2026-08-05",
-              description: "Trigger exception",
-              amount: 12.0,
-              category_id: null,
-            },
-          ]),
+      const req = new Request("http://localhost/api/user/transactions", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          authorization: "Bearer unexpected-error-token",
         },
-      );
+        body: JSON.stringify([
+          {
+            financial_account_id: accountId,
+            date: "2026-08-05",
+            description: "Trigger exception",
+            amount: 12.0,
+            category_id: null,
+          },
+        ]),
+      });
 
       const res = await transactionsPost(req);
       const body = await res.json();
@@ -415,12 +382,9 @@ describe("transactions endpoint", () => {
   });
 
   it("returns 401 for GET when the authorization header is missing", async () => {
-    const req = new Request(
-      "http://localhost/api/user/statements/transactions",
-      {
-        method: "GET",
-      },
-    );
+    const req = new Request("http://localhost/api/user/transactions", {
+      method: "GET",
+    });
 
     const res = await transactionsGet(req);
     const body = await res.json();
@@ -445,13 +409,10 @@ describe("transactions endpoint", () => {
     insertTransaction.run(account2, "2026-08-09", "User2 purchase", 20.0, null);
     insertTransaction.run(account1, "2026-08-10", "User1 refund", 5.5, null);
 
-    const req = new Request(
-      "http://localhost/api/user/statements/transactions",
-      {
-        method: "GET",
-        headers: { authorization: "Bearer get-user1-token" },
-      },
-    );
+    const req = new Request("http://localhost/api/user/transactions", {
+      method: "GET",
+      headers: { authorization: "Bearer get-user1-token" },
+    });
 
     const res = await transactionsGet(req);
     const body = await res.json();
@@ -472,13 +433,10 @@ describe("transactions endpoint", () => {
     createFinancialAccount(userId);
     createSessionForUser(userId, "get-empty-token");
 
-    const req = new Request(
-      "http://localhost/api/user/statements/transactions",
-      {
-        method: "GET",
-        headers: { authorization: "Bearer get-empty-token" },
-      },
-    );
+    const req = new Request("http://localhost/api/user/transactions", {
+      method: "GET",
+      headers: { authorization: "Bearer get-empty-token" },
+    });
 
     const res = await transactionsGet(req);
     const body = await res.json();
@@ -486,5 +444,63 @@ describe("transactions endpoint", () => {
     expect(res.status).toBe(200);
     expect(Array.isArray(body.transactions)).toBe(true);
     expect(body.transactions.length).toBe(0);
+  });
+
+  it("returns the requested transaction page with pagination metadata", async () => {
+    const userId = createUser("-4");
+    const accountId = createFinancialAccount(userId);
+    createSessionForUser(userId, "get-paginated-token");
+
+    const insertTransaction = db.query(
+      "INSERT INTO transactions (financial_account_id, date, description, amount, category_id) VALUES (?, ?, ?, ?, ?)",
+    );
+    insertTransaction.run(accountId, "2026-08-08", "Oldest", 10.0, null);
+    insertTransaction.run(accountId, "2026-08-10", "Newest", 20.0, null);
+    insertTransaction.run(accountId, "2026-08-09", "Middle", 15.0, null);
+
+    const req = new Request(
+      "http://localhost/api/user/transactions?page=2&limit=1",
+      {
+        method: "GET",
+        headers: { authorization: "Bearer get-paginated-token" },
+      },
+    );
+
+    const res = await transactionsGet(req);
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.transactions.length).toBe(1);
+    expect(body.transactions[0].description).toBe("Middle");
+    expect(body.pagination).toEqual({
+      page: 2,
+      limit: 1,
+      total: 3,
+      totalPages: 3,
+    });
+  });
+
+  it("returns 400 for invalid transaction pagination parameters", async () => {
+    const userId = createUser("-5");
+    createFinancialAccount(userId);
+    createSessionForUser(userId, "get-invalid-pagination-token");
+
+    const req = new Request(
+      "http://localhost/api/user/transactions?page=0&limit=101",
+      {
+        method: "GET",
+        headers: {
+          authorization: "Bearer get-invalid-pagination-token",
+        },
+      },
+    );
+
+    const res = await transactionsGet(req);
+    const body = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(body.error).toBe(
+      "page must be a positive integer and limit must be an integer between 1 and 100",
+    );
   });
 });
