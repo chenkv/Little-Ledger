@@ -6,3 +6,9 @@ export type transaction_row = {
   amount: number;
   category_id: number | null;
 };
+
+export type parsed_transaction_row = {
+  date: string;
+  description: string;
+  amount: number | string;
+};
