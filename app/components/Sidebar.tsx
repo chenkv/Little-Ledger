@@ -45,6 +45,12 @@ export default function Sidebar() {
         </Link>
         <Link
           className="block px-3 py-2 rounded-md hover:bg-[var(--card)] dark:hover:bg-[var(--card-dark)] cursor-pointer"
+          href="/accounts"
+        >
+          Accounts
+        </Link>
+        <Link
+          className="block px-3 py-2 rounded-md hover:bg-[var(--card)] dark:hover:bg-[var(--card-dark)] cursor-pointer"
           href="/categories"
         >
           Categories

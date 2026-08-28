@@ -4,8 +4,30 @@ import path from "path";
 import db from "@/lib/db";
 
 export async function getUserIdFromRequest(req: Request) {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("session_token")?.value;
+  const cookieHeader = req.headers.get("cookie");
+
+  let token: string | null = null;
+
+  if (cookieHeader) {
+    const cookies = cookieHeader.split(";");
+
+    for (const cookie of cookies) {
+      const [name, ...valueParts] = cookie.trim().split("=");
+
+      if (name === "session_token") {
+        token = valueParts.join("=");
+        break;
+      }
+    }
+  }
+
+  if (!token) {
+    const authHeader = req.headers.get("authorization");
+
+    if (authHeader?.startsWith("Bearer ")) {
+      token = authHeader.slice("Bearer ".length).trim();
+    }
+  }
 
   if (!token) return null;
 

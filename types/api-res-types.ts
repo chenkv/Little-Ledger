@@ -12,3 +12,11 @@ export type parsed_transaction_row = {
   description: string;
   amount: number | string;
 };
+
+export type financial_account_get = {
+  id: number;
+  name: string;
+  type: string;
+  institution: string | null;
+  description: string | null;
+};
