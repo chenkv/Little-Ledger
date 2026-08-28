@@ -45,6 +45,8 @@ export default function CategoriesClient() {
 
       const result = await response.json();
 
+      console.log(result);
+
       await mutate();
 
       // Optionally reset the form
