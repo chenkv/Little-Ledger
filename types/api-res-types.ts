@@ -14,3 +14,13 @@ export type financial_account_get = {
   institution: string | null;
   description: string | null;
 };
+
+export type categories_get = {
+  categories: [
+    {
+      id: number;
+      name: string;
+      type: string;
+    },
+  ];
+};
