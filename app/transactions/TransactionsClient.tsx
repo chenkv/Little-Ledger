@@ -1,8 +1,15 @@
 "use client";
 
+import useSWR from "swr";
 import { useState } from "react";
-import Sidebar from "../components/Sidebar";
-import { parsed_transaction_row } from "@/types/api-res-types";
+import DashboardLayout from "../components/DashboardLayout";
+import { transactions_get } from "@/types/api-res-types";
+
+async function fetcher(url: string): Promise<transactions_get> {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error("Failed to fetch products");
+  return response.json();
+}
 
 const dummyTransactions = [
   {
@@ -99,6 +106,11 @@ const categories = [
 ];
 
 export default function TransactionsClient() {
+  const { data, error, isLoading, mutate } = useSWR(
+    `/api/user/transactions`,
+    fetcher,
+  );
+
   const [filters, setFilters] = useState({
     search: "",
     category: "",
@@ -118,6 +130,14 @@ export default function TransactionsClient() {
   const [uploadFileMessage, setUploadFileMessage] = useState<string | null>(
     null,
   );
+
+  if (isLoading) {
+    return <div>Loading</div>;
+  } else if (error) {
+    return <div>Error!</div>;
+  }
+
+  console.log(data);
 
   const filtered = dummyTransactions.filter((tx) => {
     if (
@@ -212,10 +232,8 @@ export default function TransactionsClient() {
   }
 
   return (
-    <div className="flex min-h-screen min-w-screen bg-[var(--bg)] text-[var(--text)] dark:bg-[var(--bg-dark)] dark:text-[var(--text-dark)]">
-      <Sidebar />
-
-      <main className="w-max flex-1 p-6 overflow-y-auto">
+    <DashboardLayout
+      content={
         <div className="mx-auto space-y-10">
           {/* Page Title */}
           <h1 className="text-3xl font-bold">Transactions</h1>
@@ -412,7 +430,7 @@ export default function TransactionsClient() {
             </section>
           </section>
         </div>
-      </main>
-    </div>
+      }
+    />
   );
 }
