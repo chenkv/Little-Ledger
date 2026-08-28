@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Sidebar from "../components/Sidebar";
+import DashboardLayout from "../components/DashboardLayout";
 
 const dummyData = {
   "2024-04": {
@@ -46,12 +46,8 @@ export default function DashboardClient() {
   const percent = Math.min((data.spent / data.budget) * 100, 100);
 
   return (
-    <div className="flex min-h-screen bg-[var(--bg)] text-[var(--text)] dark:bg-[var(--bg-dark)] dark:text-[var(--text-dark)]">
-      {/* Sidebar */}
-      <Sidebar />
-
-      {/* Main Content */}
-      <main className="flex-1 p-6 overflow-y-auto">
+    <DashboardLayout
+      content={
         <div className="max-w-2xl mx-auto space-y-8">
           {/* Month Carousel */}
           <div className="flex overflow-x-auto gap-3 pb-2">
@@ -60,13 +56,13 @@ export default function DashboardClient() {
                 key={key}
                 onClick={() => setActiveMonth(key)}
                 className={`
-                  px-4 py-2 rounded-lg whitespace-nowrap transition
-                  ${
-                    activeMonth === key
-                      ? "bg-[var(--accent)] text-white dark:bg-[var(--accent-dark)]"
-                      : "bg-[var(--card)] dark:bg-[var(--card-dark)]"
-                  }
-                `}
+                px-4 py-2 rounded-lg whitespace-nowrap transition
+                ${
+                  activeMonth === key
+                    ? "bg-[var(--accent)] text-white dark:bg-[var(--accent-dark)]"
+                    : "bg-[var(--card)] dark:bg-[var(--card-dark)]"
+                }
+              `}
               >
                 {dummyData[key].monthLabel}
               </button>
@@ -134,7 +130,7 @@ export default function DashboardClient() {
             ))}
           </div>
         </div>
-      </main>
-    </div>
+      }
+    />
   );
 }

@@ -6,3 +6,11 @@ export type transaction_row = {
   amount: number;
   category_id: number | null;
 };
+
+export type financial_account_get = {
+  id: number;
+  name: string;
+  type: string;
+  institution: string | null;
+  description: string | null;
+};
