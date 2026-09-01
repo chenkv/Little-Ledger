@@ -18,12 +18,64 @@ async function fetcher(url: string) {
 
 export default function TransactionsClient() {
   const [page, setPage] = useState(1);
+  const [filters, setFilters] = useState({
+    search: "",
+    categoryId: "",
+    minAmount: "",
+    maxAmount: "",
+    startDate: "",
+    endDate: "",
+  });
+
+  const [appliedFilters, setAppliedFilters] = useState({
+    search: "",
+    categoryId: "",
+    minAmount: "",
+    maxAmount: "",
+    startDate: "",
+    endDate: "",
+  });
+
+  // Build query parameters from applied filters
+  const buildQueryParams = () => {
+    const params = new URLSearchParams();
+    params.append("page", page.toString());
+
+    if (appliedFilters.search) {
+      params.append("name", appliedFilters.search);
+    }
+    if (appliedFilters.categoryId) {
+      params.append("category", appliedFilters.categoryId);
+    }
+    if (appliedFilters.minAmount) {
+      params.append("minAmount", appliedFilters.minAmount);
+    }
+    if (appliedFilters.maxAmount) {
+      params.append("maxAmount", appliedFilters.maxAmount);
+    }
+    if (appliedFilters.startDate) {
+      params.append("minDate", appliedFilters.startDate);
+    }
+    if (appliedFilters.endDate) {
+      params.append("maxDate", appliedFilters.endDate);
+    }
+
+    return params.toString();
+  };
+
+  const handleSearch = () => {
+    setPage(1); // Reset to first page when searching
+    setAppliedFilters(filters);
+  };
 
   const {
     data: transactions,
     error: transactionsError,
     isLoading: transactionsLoading,
-  } = useSWR<transactions_get>(`/api/user/transactions?page=${page}`, fetcher);
+  } = useSWR<transactions_get>(
+    `/api/user/transactions?${buildQueryParams()}`,
+    fetcher,
+  );
 
   const {
     data: accounts,
@@ -36,15 +88,6 @@ export default function TransactionsClient() {
     error: categoriesError,
     isLoading: categoriesLoading,
   } = useSWR("/api/user/categories", fetcher);
-
-  const [filters, setFilters] = useState({
-    search: "",
-    category: "",
-    minAmount: "",
-    maxAmount: "",
-    startDate: "",
-    endDate: "",
-  });
 
   const [manualTx, setManualTx] = useState({
     name: "",
@@ -137,10 +180,6 @@ export default function TransactionsClient() {
     });
   }
 
-  /*
-   * Convert API transactions into the shape
-   * used by the UI.
-   */
   const formattedTransactions = transactions.transactions.map((tx) => {
     const category = categories.categories.find((c) => c.id === tx.category_id);
 
@@ -149,40 +188,6 @@ export default function TransactionsClient() {
       name: tx.description,
       category: category?.name ?? "No Category",
     };
-  });
-
-  /*
-   * Apply client-side filters to the current page.
-   */
-  const filtered = formattedTransactions.filter((tx) => {
-    if (
-      filters.search &&
-      !tx.name.toLowerCase().includes(filters.search.toLowerCase())
-    ) {
-      return false;
-    }
-
-    if (filters.category && tx.category !== filters.category) {
-      return false;
-    }
-
-    if (filters.minAmount && tx.amount < Number(filters.minAmount)) {
-      return false;
-    }
-
-    if (filters.maxAmount && tx.amount > Number(filters.maxAmount)) {
-      return false;
-    }
-
-    if (filters.startDate && tx.date < filters.startDate) {
-      return false;
-    }
-
-    if (filters.endDate && tx.date > filters.endDate) {
-      return false;
-    }
-
-    return true;
   });
 
   return (
@@ -204,7 +209,7 @@ export default function TransactionsClient() {
             <section className="p-6 rounded-xl bg-[var(--surface)] dark:bg-[var(--surface-dark)] shadow space-y-4 flex-1">
               <h2 className="text-xl font-semibold">All Transactions</h2>
 
-              {filtered.map((tx) => (
+              {formattedTransactions.map((tx) => (
                 <div
                   key={tx.id}
                   className="flex justify-between py-3 border-b border-[var(--divider)] dark:border-[var(--divider-dark)] last:border-none"
@@ -223,7 +228,7 @@ export default function TransactionsClient() {
                 </div>
               ))}
 
-              {filtered.length === 0 && (
+              {formattedTransactions.length === 0 && (
                 <p className="text-center text-[var(--text-muted)] dark:text-[var(--text-muted-dark)]">
                   No transactions match your filters.
                 </p>
@@ -277,18 +282,18 @@ export default function TransactionsClient() {
 
                   <select
                     className="px-3 py-2 rounded-md bg-[var(--card)] dark:bg-[var(--card-dark)]"
-                    value={filters.category}
+                    value={filters.categoryId}
                     onChange={(e) =>
                       setFilters({
                         ...filters,
-                        category: e.target.value,
+                        categoryId: e.target.value,
                       })
                     }
                   >
                     <option value="">All Categories</option>
 
                     {categories.categories.map((c) => (
-                      <option key={c.id} value={c.name}>
+                      <option key={c.id} value={c.id}>
                         {c.name}
                       </option>
                     ))}
@@ -344,6 +349,14 @@ export default function TransactionsClient() {
                     }
                   />
                 </div>
+
+                <button
+                  type="button"
+                  onClick={handleSearch}
+                  className="w-full py-2 rounded-md font-medium text-white bg-[var(--primary)] dark:bg-[var(--primary-dark)]"
+                >
+                  Search
+                </button>
               </section>
 
               {/* Upload Bank Statement */}

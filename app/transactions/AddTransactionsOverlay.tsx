@@ -16,6 +16,7 @@ export default function AddTransactionsOverlay({
 
       return {
         ...t,
+        date: formatDateForInput(t.date),
         amount: parseFloat(String(t.amount)),
         financial_account_id: financialAccountId,
         category_id: categoryValue ? Number(categoryValue) : null,
@@ -107,8 +108,6 @@ export default function AddTransactionsOverlay({
   if (transactions.transactions.length == 0) {
     return;
   }
-
-  console.log(transactions);
 
   return (
     <div
