@@ -1,7 +1,6 @@
-import ThemeToggle from "./components/ThemeToggle";
 import { ThemeProvider } from "@/app/lib/ThemeContext";
 import { cookies } from "next/headers";
-import Link from "next/link";
+import Header from "@/app/components/Header";
 import "./globals.css";
 
 export const metadata = {
@@ -15,7 +14,6 @@ export default async function RootLayout({
   children: React.ReactNode;
 }) {
   const cookieStore = await cookies();
-
   const theme = cookieStore.get("theme")?.value === "dark" ? "dark" : "light";
 
   return (
@@ -33,68 +31,7 @@ export default async function RootLayout({
       >
         <ThemeProvider initialTheme={theme}>
           {/* Header */}
-          <header
-            className="
-              shadow-sm border-b
-              bg-(--surface) border-(--border)
-              dark:bg-(--surface-dark) dark:border-(--border-dark)
-            "
-          >
-            <div className="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
-              <Link
-                className="
-                  text-2xl font-bold tracking-tight
-                  text-(--text) dark:text-(--text-dark)
-                "
-                href="/"
-              >
-                LittleLedger
-              </Link>
-
-              <div className="flex items-center gap-6">
-                <nav
-                  className="
-                    flex gap-6 font-medium
-                    text-(--text-secondary)
-                    dark:text-(--text-secondary-dark)
-                  "
-                >
-                  <Link
-                    href="/"
-                    className="
-                      hover:text-(--text)
-                      dark:hover:text-(--text-dark)
-                      transition
-                    "
-                  >
-                    Home
-                  </Link>
-                  <Link
-                    href="/home"
-                    className="
-                      hover:text-(--text)
-                      dark:hover:text-(--text-dark)
-                      transition
-                    "
-                  >
-                    My Ledger
-                  </Link>
-                  <Link
-                    href="/about"
-                    className="
-                      hover:text-(--text)
-                      dark:hover:text-(--text-dark)
-                      transition
-                    "
-                  >
-                    About
-                  </Link>
-                </nav>
-
-                <ThemeToggle />
-              </div>
-            </div>
-          </header>
+          <Header />
 
           {/* Main Content */}
           <main className="flex-1">{children}</main>

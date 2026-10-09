@@ -1,11 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 
 export default function LoginForm() {
-  const router = useRouter();
-
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -43,7 +40,7 @@ export default function LoginForm() {
       return;
     }
 
-    router.push("/home");
+    window.location.assign("/dashboard");
   }
 
   return (
