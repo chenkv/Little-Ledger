@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getCurrentUserFromCookies } from "@/app/lib/dal";
 import LogoutButton from "@/app/components/LogoutButton";
 import ThemeToggle from "@/app/components/ThemeToggle";
+import ActiveNavLink from "@/app/components/ActiveNavLink";
 
 export default async function Header() {
   const currUser = await getCurrentUserFromCookies();
@@ -27,7 +28,7 @@ export default async function Header() {
 
         {currUser ? (
           <nav className="flex gap-20 font-medium text-(--text-secondary) dark:text-(--text-secondary-dark)">
-            <Link
+            <ActiveNavLink
               href="/dashboard"
               className="
                 hover:text-(--text)
@@ -36,8 +37,8 @@ export default async function Header() {
               "
             >
               Dashboard
-            </Link>
-            <Link
+            </ActiveNavLink>
+            <ActiveNavLink
               href="/accounts"
               className="
                 hover:text-(--text)
@@ -46,8 +47,8 @@ export default async function Header() {
               "
             >
               Accounts
-            </Link>
-            <Link
+            </ActiveNavLink>
+            <ActiveNavLink
               href="/analysis"
               className="
                 hover:text-(--text)
@@ -56,7 +57,7 @@ export default async function Header() {
               "
             >
               Analysis
-            </Link>
+            </ActiveNavLink>
           </nav>
         ) : null}
 
@@ -71,7 +72,7 @@ export default async function Header() {
             {currUser ? (
               <LogoutButton />
             ) : (
-              <Link
+              <ActiveNavLink
                 href="/login"
                 className="
                   hover:text-(--text)
@@ -80,7 +81,7 @@ export default async function Header() {
                 "
               >
                 Login
-              </Link>
+              </ActiveNavLink>
             )}
           </nav>
 
