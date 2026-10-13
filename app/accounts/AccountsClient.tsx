@@ -274,7 +274,7 @@ export default function AccountsClient() {
           paddingInline: "max(0px, calc((100% - 20rem) / 2))",
           scrollbarWidth: "none",
         }}
-        className="relative py-8 flex items-center justify-start space-x-4 overflow-x-scroll scrollbar-hidden cursor-grab active:cursor-grabbing select-none"
+        className="relative py-8 flex items-center justify-start space-x-6 overflow-x-scroll scrollbar-hidden cursor-grab active:cursor-grabbing select-none"
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
