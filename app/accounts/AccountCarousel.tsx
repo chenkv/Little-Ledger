@@ -15,16 +15,14 @@ type AccountCarouselProps = {
   accounts: financial_account_get[];
   isLoading: boolean;
   hasError: boolean;
-  enableAccountPopup: boolean;
-  setEnableAccountPopup: (value: boolean) => void;
+  setAccountPopup: (value: boolean) => void;
 };
 
 export default function AccountCarousel({
   accounts,
   isLoading,
   hasError,
-  enableAccountPopup,
-  setEnableAccountPopup,
+  setAccountPopup,
 }: AccountCarouselProps) {
   const carouselRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<{
@@ -210,10 +208,7 @@ export default function AccountCarousel({
             data-scroll-scale
             className="w-[4rem] h-[4rem] flex flex-col rounded-full shadow-md bg-white dark:bg-(--account-card-dark) items-center justify-center cursor-pointer hover:shadow-lg transition-shadow duration-300 shrink-0"
             onClick={() => {
-              const form = document.getElementById(
-                "add-account-form",
-              ) as HTMLFormElement | null;
-              form?.scrollIntoView({ behavior: "smooth" });
+              setAccountPopup(true);
             }}
           >
             <Image

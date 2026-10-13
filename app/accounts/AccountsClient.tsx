@@ -19,24 +19,26 @@ export default function AccountsClient() {
     `/api/user/financial-accounts`,
     fetcher,
   );
-  const [enableAccountPopup, setEnableAccountPopup] = useState<boolean>(false);
+  const [accountPopup, setAccountPopup] = useState<boolean>(false);
 
   return (
     <div>
+      {accountPopup && (
+        <CreateAccountPopup
+          setAccountPopup={setAccountPopup}
+          onAccountCreated={async () => {
+            setAccountPopup(false);
+            await mutate();
+          }}
+        />
+      )}
+
       <AccountCarousel
         accounts={data?.accounts ?? []}
         isLoading={isLoading}
         hasError={Boolean(error)}
-        enableAccountPopup={enableAccountPopup}
-        setEnableAccountPopup={setEnableAccountPopup}
+        setAccountPopup={setAccountPopup}
       />
-
-      {enableAccountPopup && (
-        <CreateAccountPopup
-          setEnableAccountPopup={setEnableAccountPopup}
-          mutate={mutate}
-        />
-      )}
     </div>
   );
 }
