@@ -2,6 +2,15 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+.scrollbar-hidden {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scrollbar-hidden::-webkit-scrollbar {
+  display: none;
+}
+
 :root {
   /* Light Mode — Cabin in the Forest */
   --bg: #f7f3ee;
@@ -25,6 +34,7 @@
   --bg-dark: #1e1a17;
   --surface-dark: #2a2420;
   --card-dark: #3a302a;
+  --account-card-dark: #d4d4d4;
   --border-dark: #4a3f38;
   --divider-dark: #4f443d;
 
