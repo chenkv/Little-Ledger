@@ -512,6 +512,79 @@ describe("transactions endpoint", () => {
     );
   });
 
+  it("filters transactions by accountId and keeps the filter scoped to the user", async () => {
+    const userId = createUser("-account-filter");
+    const selectedAccountId = createFinancialAccount(userId);
+    const otherAccountId = createFinancialAccount(userId);
+    createSessionForUser(userId, "get-account-filter-token");
+
+    const otherUserId = createUser("-account-filter-other");
+    const foreignAccountId = createFinancialAccount(otherUserId);
+
+    const insertTransaction = db.query(
+      "INSERT INTO transactions (financial_account_id, date, description, amount, category_id) VALUES (?, ?, ?, ?, ?)",
+    );
+    insertTransaction.run(
+      selectedAccountId,
+      "2026-08-08",
+      "Selected account purchase",
+      10.0,
+      null,
+    );
+    insertTransaction.run(
+      otherAccountId,
+      "2026-08-09",
+      "Other account purchase",
+      20.0,
+      null,
+    );
+    insertTransaction.run(
+      foreignAccountId,
+      "2026-08-10",
+      "Foreign account purchase",
+      30.0,
+      null,
+    );
+
+    const req = new Request(
+      `http://localhost/api/user/transactions?accountId=${selectedAccountId}`,
+      {
+        method: "GET",
+        headers: { authorization: "Bearer get-account-filter-token" },
+      },
+    );
+
+    const res = await transactionsGet(req);
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.transactions).toHaveLength(1);
+    expect(body.transactions[0].financial_account_id).toBe(selectedAccountId);
+    expect(body.pagination.total).toBe(1);
+  });
+
+  it("returns 400 when accountId is not a positive integer", async () => {
+    const userId = createUser("-invalid-account-filter");
+    createFinancialAccount(userId);
+    createSessionForUser(userId, "get-invalid-account-filter-token");
+
+    const req = new Request(
+      "http://localhost/api/user/transactions?accountId=not-an-id",
+      {
+        method: "GET",
+        headers: {
+          authorization: "Bearer get-invalid-account-filter-token",
+        },
+      },
+    );
+
+    const res = await transactionsGet(req);
+    const body = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(body.error).toBe("accountId must be a positive integer");
+  });
+
   it("filters transactions by category", async () => {
     const userId = createUser("-6");
     const accountId = createFinancialAccount(userId);

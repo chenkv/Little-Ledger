@@ -157,12 +157,25 @@ export async function GET(req: Request) {
     );
   }
 
+  const accountId = searchParams.get("accountId");
   const categoryId = searchParams.get("category");
   const name = searchParams.get("name");
   const minDate = searchParams.get("minDate");
   const maxDate = searchParams.get("maxDate");
   const minAmount = searchParams.get("minAmount");
   const maxAmount = searchParams.get("maxAmount");
+
+  if (
+    accountId !== null &&
+    (!/^\d+$/.test(accountId) ||
+      !Number.isSafeInteger(Number(accountId)) ||
+      Number(accountId) <= 0)
+  ) {
+    return NextResponse.json(
+      { error: "accountId must be a positive integer" },
+      { status: 400 },
+    );
+  }
 
   // Validate date formats are YYYY-MM-DD
   if (minDate && !/^\d{4}-\d{2}-\d{2}$/.test(minDate)) {
@@ -204,6 +217,11 @@ export async function GET(req: Request) {
   // Build dynamic WHERE clause
   const whereConditions = ["fa.user_id = ?"];
   const params: Array<string | number> = [userId];
+
+  if (accountId !== null) {
+    whereConditions.push("t.financial_account_id = ?");
+    params.push(Number(accountId));
+  }
 
   if (categoryId) {
     whereConditions.push("t.category_id = ?");
