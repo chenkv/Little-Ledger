@@ -15,14 +15,18 @@ type AccountCarouselProps = {
   accounts: financial_account_get[];
   isLoading: boolean;
   hasError: boolean;
+  selectedAccountId?: number | null;
   setAccountPopup: (value: boolean) => void;
+  setSelectedAccountId: (value: number | null) => void;
 };
 
 export default function AccountCarousel({
   accounts,
   isLoading,
   hasError,
+  selectedAccountId,
   setAccountPopup,
+  setSelectedAccountId,
 }: AccountCarouselProps) {
   const carouselRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<{
@@ -32,7 +36,6 @@ export default function AccountCarousel({
     isDragging: boolean;
   } | null>(null);
   const didDragRef = useRef(false);
-  const [activeAccountId, setActiveAccountId] = useState<number | null>(null);
 
   function handlePointerDown(event: PointerEvent<HTMLDivElement>) {
     if (event.pointerType !== "mouse" || event.button !== 0) return;
@@ -84,7 +87,7 @@ export default function AccountCarousel({
   }
 
   function handleAccountSelect(accountId: number) {
-    setActiveAccountId(accountId);
+    setSelectedAccountId(accountId);
 
     const carousel = carouselRef.current;
     const selectedCard = carousel?.querySelector<HTMLElement>(
@@ -200,7 +203,7 @@ export default function AccountCarousel({
             <AccountCard
               key={account.id}
               account={account}
-              isActive={activeAccountId === account.id}
+              isActive={selectedAccountId === account.id}
               onSelect={() => handleAccountSelect(account.id)}
             />
           ))}

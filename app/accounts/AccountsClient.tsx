@@ -4,6 +4,7 @@ import useSWR from "swr";
 import { useState } from "react";
 import { financial_account_get } from "@/types/api-res-types";
 import AccountCarousel from "./AccountCarousel";
+import AccountTransactions from "./AccountTransactions";
 import CreateAccountPopup from "./CreateAccountPopup";
 
 async function fetcher(
@@ -18,6 +19,9 @@ export default function AccountsClient() {
   const { data, error, isLoading, mutate } = useSWR(
     `/api/user/financial-accounts`,
     fetcher,
+  );
+  const [selectedAccountId, setSelectedAccountId] = useState<number | null>(
+    null,
   );
   const [accountPopup, setAccountPopup] = useState<boolean>(false);
 
@@ -38,6 +42,16 @@ export default function AccountsClient() {
         isLoading={isLoading}
         hasError={Boolean(error)}
         setAccountPopup={setAccountPopup}
+        selectedAccountId={selectedAccountId}
+        setSelectedAccountId={setSelectedAccountId}
+      />
+
+      <AccountTransactions
+        accountName={
+          data?.accounts.find((a) => a.id === selectedAccountId)?.name ||
+          "Unknown Account"
+        }
+        accountId={selectedAccountId}
       />
     </div>
   );
