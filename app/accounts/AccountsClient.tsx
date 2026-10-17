@@ -47,10 +47,7 @@ export default function AccountsClient() {
       />
 
       <AccountTransactions
-        accountName={
-          data?.accounts.find((a) => a.id === selectedAccountId)?.name ||
-          "Unknown Account"
-        }
+        accounts={data?.accounts ?? []}
         accountId={selectedAccountId}
       />
     </div>

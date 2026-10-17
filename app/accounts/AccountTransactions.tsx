@@ -1,13 +1,18 @@
 import useSWR from "swr";
 import useSWRImmutable from "swr/immutable";
 import { useState } from "react";
-import { transactions_get, categories_get } from "@/types/api-res-types";
+import {
+  financial_account_get,
+  transactions_get,
+  categories_get,
+} from "@/types/api-res-types";
 import TransactionsFilter, {
   type TransactionFilterValues,
 } from "./TransactionsFilter";
+import AddTransactionsPopup from "./AddTransactionsPopup";
 
 type createAccountTransactionProps = {
-  accountName: string;
+  accounts: financial_account_get[];
   accountId: number | null;
 };
 
@@ -24,7 +29,7 @@ async function fetcherCategories(url: string): Promise<categories_get> {
 }
 
 export default function AccountTransactions({
-  accountName,
+  accounts,
   accountId,
 }: createAccountTransactionProps) {
   const {
@@ -35,6 +40,7 @@ export default function AccountTransactions({
 
   const [searchPage, setSearchPage] = useState<number>(1);
   const [enableFilters, setEnableFilters] = useState(false);
+  const [addTransactionPopup, setAddTransactionPopup] = useState(false);
   const [filters, setFilters] = useState<TransactionFilterValues>({
     name: "",
     category: "",
@@ -73,7 +79,7 @@ export default function AccountTransactions({
     return params.toString() ? `?${params.toString()}` : "";
   }
 
-  const { data, error, isLoading } = useSWR(
+  const { data, error, isLoading, mutate } = useSWR(
     accountId === null ? null : `/api/user/transactions${queryParams()}`,
     fetcherAccount,
   );
@@ -87,16 +93,29 @@ export default function AccountTransactions({
     );
   }
 
-  console.log(data);
-  console.log(categoriesData);
-
   return (
     <div className="p-6 bg-(--surface) dark:bg-(--surface-dark)">
+      {addTransactionPopup && (
+        <AddTransactionsPopup
+          accountId={accountId}
+          institution={accounts.find((a) => a.id === accountId)?.institution}
+          categories={categoriesData?.categories ?? []}
+          setTransactionPopup={setAddTransactionPopup}
+          onTransactionsAdded={() => {
+            setAddTransactionPopup(false);
+            mutate();
+          }}
+        />
+      )}
+
       <div className="flex space-x-4 items-center mb-4">
         <h2 className="text-2xl font-semibold">
-          Transactions for {accountName}
+          Transactions for {accounts.find((a) => a.id === accountId)?.name}
         </h2>
-        <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+        <button
+          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+          onClick={() => setAddTransactionPopup((enabled) => !enabled)}
+        >
           Add Transaction(s)
         </button>
         <button
