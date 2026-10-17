@@ -39,6 +39,7 @@ export default function AccountTransactions({
   } = useSWRImmutable("/api/user/categories", fetcherCategories);
 
   const [searchPage, setSearchPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(20);
   const [enableFilters, setEnableFilters] = useState(false);
   const [addTransactionPopup, setAddTransactionPopup] = useState(false);
   const [filters, setFilters] = useState<TransactionFilterValues>({
@@ -76,6 +77,7 @@ export default function AccountTransactions({
       params.append("maxDate", filters.end_date);
     }
     params.append("page", searchPage.toString());
+    params.append("limit", pageSize.toString());
     return params.toString() ? `?${params.toString()}` : "";
   }
 
@@ -143,30 +145,89 @@ export default function AccountTransactions({
         ) : error || categoriesError ? (
           <p>Error loading transactions.</p>
         ) : data?.transactions.length ? (
-          <ul className="space-y-2">
-            {data.transactions.map((transaction) => (
-              <li
-                key={transaction.id}
-                className="flex justify-between items-center p-4 bg-(--surface-variant) dark:bg-(--surface-variant-dark) ring-2 ring-transparent hover:ring-(--primary-dark) hover:cursor-pointer rounded-lg"
-              >
-                <p className="flex-none w-30 font-medium">{transaction.date}</p>
-                <p className="grow wrap-anywhere font-medium">
-                  {transaction.description}
-                </p>
-                <p className="flex-none w-30 font-medium">
-                  {categoriesData?.categories.find(
-                    (c) => c.id === transaction.category_id,
-                  )?.name || ""}
-                </p>
-                <div
-                  className={`flex-none flex justify-end w-30 font-semibold ${transaction.amount > 0 ? "text-red-300" : "text-green-300"}`}
+          <>
+            <ul className="space-y-2">
+              {data.transactions.map((transaction) => (
+                <li
+                  key={transaction.id}
+                  className="flex justify-between items-center p-4 bg-(--surface-variant) dark:bg-(--surface-variant-dark) ring-2 ring-transparent hover:ring-(--primary-dark) hover:cursor-pointer rounded-lg"
                 >
-                  {transaction.amount > 0 ? "-" : "+"}$
-                  {Math.abs(transaction.amount).toFixed(2)}
-                </div>
-              </li>
-            ))}
-          </ul>
+                  <p className="flex-none w-30 font-medium">
+                    {transaction.date}
+                  </p>
+                  <p className="grow wrap-anywhere font-medium">
+                    {transaction.description}
+                  </p>
+                  <p className="flex-none w-30 font-medium">
+                    {categoriesData?.categories.find(
+                      (c) => c.id === transaction.category_id,
+                    )?.name || ""}
+                  </p>
+                  <div
+                    className={`flex-none flex justify-end w-30 font-semibold ${transaction.amount > 0 ? "text-red-300" : "text-green-300"}`}
+                  >
+                    {transaction.amount > 0 ? "-" : "+"}$
+                    {Math.abs(transaction.amount).toFixed(2)}
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <nav
+              aria-label="Transaction pages"
+              className="mt-4 flex flex-col flex-wrap items-center justify-center gap-4"
+            >
+              <div className="flex gap-4 items-center justify-center">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setSearchPage(Math.max(1, data.pagination.page - 1))
+                  }
+                  disabled={data.pagination.page <= 1 || isLoading}
+                  className="rounded bg-(--primary-dark) px-4 py-2 font-bold text-white enabled:hover:bg-(--primary-hover-dark) disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Back
+                </button>
+                <span aria-live="polite">
+                  Page {data.pagination.page} of {data.pagination.totalPages}
+                </span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setSearchPage(
+                      Math.min(
+                        data.pagination.totalPages,
+                        data.pagination.page + 1,
+                      ),
+                    )
+                  }
+                  disabled={
+                    data.pagination.page >= data.pagination.totalPages ||
+                    isLoading
+                  }
+                  className="rounded bg-(--primary-dark) px-4 py-2 font-bold text-white enabled:hover:bg-(--primary-hover-dark) disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Next
+                </button>
+              </div>
+              <label className="flex items-center gap-2">
+                Results per page
+                <select
+                  value={pageSize}
+                  onChange={(event) => {
+                    setPageSize(Number(event.currentTarget.value));
+                    setSearchPage(1);
+                  }}
+                  className="rounded border border-gray-300 bg-white px-2 py-2 text-black dark:border-(--border-dark) dark:bg-(--card-dark) dark:text-white"
+                >
+                  {[10, 20, 50, 100].map((size) => (
+                    <option key={size} value={size}>
+                      {size}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </nav>
+          </>
         ) : (
           <p>No transactions found.</p>
         )}
