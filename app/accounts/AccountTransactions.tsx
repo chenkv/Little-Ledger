@@ -1,6 +1,6 @@
 import useSWR from "swr";
 import useSWRImmutable from "swr/immutable";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   financial_account_get,
   transactions_get,
@@ -22,6 +22,9 @@ type TransactionEditDraft = {
   category_id: number | null;
   amount: string;
 };
+
+const PAGE_SIZE_COOKIE = "little-ledger-transaction-page-size";
+const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 
 async function fetcherAccount(url: string): Promise<transactions_get> {
   const response = await fetch(url);
@@ -65,6 +68,31 @@ export default function AccountTransactions({
     start_date: "",
     end_date: "",
   });
+
+  useEffect(() => {
+    const savedPageSize = document.cookie
+      .split("; ")
+      .find((cookie) => cookie.startsWith(`${PAGE_SIZE_COOKIE}=`))
+      ?.split("=")[1];
+    const parsedPageSize = Number(savedPageSize);
+
+    if (PAGE_SIZE_OPTIONS.includes(parsedPageSize)) {
+      setPageSize(parsedPageSize);
+    }
+  }, []);
+
+  function handlePageSizeChange(value: string) {
+    const nextPageSize = Number(value);
+    if (!PAGE_SIZE_OPTIONS.includes(nextPageSize)) {
+      return;
+    }
+
+    setPageSize(nextPageSize);
+    setSearchPage(1);
+
+    const secure = window.location.protocol === "https:" ? "; Secure" : "";
+    document.cookie = `${PAGE_SIZE_COOKIE}=${nextPageSize}; Path=/; Max-Age=31536000; SameSite=Lax${secure}`;
+  }
 
   function queryParams() {
     const params = new URLSearchParams();
@@ -456,13 +484,12 @@ export default function AccountTransactions({
                 Results per page
                 <select
                   value={pageSize}
-                  onChange={(event) => {
-                    setPageSize(Number(event.currentTarget.value));
-                    setSearchPage(1);
-                  }}
+                  onChange={(event) =>
+                    handlePageSizeChange(event.currentTarget.value)
+                  }
                   className="rounded border border-gray-300 bg-white px-2 py-2 text-black dark:border-(--border-dark) dark:bg-(--card-dark) dark:text-white"
                 >
-                  {[10, 20, 50, 100].map((size) => (
+                  {PAGE_SIZE_OPTIONS.map((size) => (
                     <option key={size} value={size}>
                       {size}
                     </option>
