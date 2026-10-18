@@ -357,6 +357,132 @@ export async function PATCH(req: Request) {
   }
 }
 
+export async function DELETE(req: Request) {
+  let transactionStarted = false;
+
+  try {
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    let requestBody: unknown;
+    try {
+      requestBody = await req.json();
+    } catch {
+      return NextResponse.json(
+        { error: "Request body must be valid JSON" },
+        { status: 400 },
+      );
+    }
+
+    if (
+      !requestBody ||
+      typeof requestBody !== "object" ||
+      Array.isArray(requestBody)
+    ) {
+      return NextResponse.json(
+        { error: "Request body must be an object containing transaction ids" },
+        { status: 400 },
+      );
+    }
+
+    const request = requestBody as Record<string, unknown>;
+    if (
+      Object.keys(request).length !== 1 ||
+      !Object.hasOwn(request, "ids") ||
+      !Array.isArray(request.ids) ||
+      request.ids.length === 0 ||
+      request.ids.length > 100 ||
+      request.ids.some(
+        (id) => typeof id !== "number" || !Number.isSafeInteger(id) || id <= 0,
+      ) ||
+      new Set(request.ids).size !== request.ids.length
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "ids must be an array of 1 to 100 unique positive integer transaction ids",
+        },
+        { status: 400 },
+      );
+    }
+
+    const ids = request.ids as number[];
+    const placeholders = ids.map(() => "?").join(", ");
+
+    db.run("BEGIN");
+    transactionStarted = true;
+
+    const ownedTransactions = db
+      .query(
+        `SELECT transactions.id
+         FROM transactions
+         JOIN financial_accounts
+           ON financial_accounts.id = transactions.financial_account_id
+         WHERE transactions.id IN (${placeholders})
+           AND financial_accounts.user_id = ?`,
+      )
+      .all(...ids, userId) as { id: number }[];
+
+    if (ownedTransactions.length !== ids.length) {
+      db.run("ROLLBACK");
+      transactionStarted = false;
+      return NextResponse.json(
+        { error: "One or more transactions were not found" },
+        { status: 404 },
+      );
+    }
+
+    const result = db
+      .query(
+        `DELETE FROM transactions
+         WHERE id IN (${placeholders})
+           AND EXISTS (
+             SELECT 1
+             FROM financial_accounts
+             WHERE financial_accounts.id = transactions.financial_account_id
+               AND financial_accounts.user_id = ?
+           )`,
+      )
+      .run(...ids, userId);
+
+    if (result.changes !== ids.length) {
+      db.run("ROLLBACK");
+      transactionStarted = false;
+      return NextResponse.json(
+        { error: "One or more transactions were not found" },
+        { status: 404 },
+      );
+    }
+
+    db.run("COMMIT");
+    transactionStarted = false;
+
+    return NextResponse.json(
+      {
+        message: "Transactions deleted successfully",
+        deletedCount: result.changes,
+        deletedIds: ids,
+      },
+      { status: 200 },
+    );
+  } catch (error) {
+    console.error("Transaction delete error:", error);
+    if (transactionStarted) {
+      try {
+        db.run("ROLLBACK");
+      } catch (rollbackError) {
+        console.warn("Transaction delete rollback failed:", rollbackError);
+      }
+    }
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
+  }
+}
+
 export async function GET(req: Request) {
   const userId = await getUserIdFromRequest(req);
   if (!userId) {

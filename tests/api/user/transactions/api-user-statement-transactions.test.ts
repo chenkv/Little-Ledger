@@ -4,6 +4,7 @@ process.env.LEDGER_DB_PATH = ":memory:";
 
 import db from "@/lib/db";
 import {
+  DELETE as transactionsDelete,
   GET as transactionsGet,
   PATCH as transactionsPatch,
   POST as transactionsPost,
@@ -78,6 +79,17 @@ function createTransaction(
 function createPatchRequest(token: string, body: unknown) {
   return new Request("http://localhost/api/user/transactions", {
     method: "PATCH",
+    headers: {
+      "content-type": "application/json",
+      cookie: `session_token=${token}`,
+    },
+    body: JSON.stringify(body),
+  });
+}
+
+function createDeleteRequest(token: string, body: unknown) {
+  return new Request("http://localhost/api/user/transactions", {
+    method: "DELETE",
     headers: {
       "content-type": "application/json",
       cookie: `session_token=${token}`,
@@ -580,6 +592,172 @@ describe("transactions endpoint", () => {
 
       expect(res.status).toBe(500);
       expect(body.error).toBe("Internal server error");
+    } finally {
+      db.query = originalQuery;
+    }
+  });
+
+  it("deletes one transaction belonging to the authenticated user", async () => {
+    const userId = createUser("-delete-single");
+    const accountId = createFinancialAccount(userId);
+    createSessionForUser(userId, "delete-single-token");
+    const transactionId = createTransaction(accountId);
+
+    const res = await transactionsDelete(
+      createDeleteRequest("delete-single-token", { ids: [transactionId] }),
+    );
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.message).toBe("Transactions deleted successfully");
+    expect(body.deletedCount).toBe(1);
+    expect(body.deletedIds).toEqual([transactionId]);
+    expect(
+      db.query("SELECT id FROM transactions WHERE id = ?").get(transactionId),
+    ).toBeNull();
+  });
+
+  it("deletes multiple transactions belonging to the authenticated user", async () => {
+    const userId = createUser("-delete-multiple");
+    const firstAccountId = createFinancialAccount(userId);
+    const secondAccountId = createFinancialAccount(userId);
+    createSessionForUser(userId, "delete-multiple-token");
+    const firstTransactionId = createTransaction(firstAccountId);
+    const secondTransactionId = createTransaction(
+      secondAccountId,
+      "2026-08-06",
+      "Another transaction",
+    );
+
+    const res = await transactionsDelete(
+      createDeleteRequest("delete-multiple-token", {
+        ids: [firstTransactionId, secondTransactionId],
+      }),
+    );
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.deletedCount).toBe(2);
+    expect(body.deletedIds).toEqual([firstTransactionId, secondTransactionId]);
+    const remaining = db
+      .query("SELECT id FROM transactions WHERE id IN (?, ?)")
+      .all(firstTransactionId, secondTransactionId);
+    expect(remaining).toHaveLength(0);
+  });
+
+  it("returns 401 for DELETE when authorization is missing", async () => {
+    const res = await transactionsDelete(
+      new Request("http://localhost/api/user/transactions", {
+        method: "DELETE",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ ids: [1] }),
+      }),
+    );
+    const body = await res.json();
+
+    expect(res.status).toBe(401);
+    expect(body.error).toBe("Unauthorized");
+  });
+
+  it("rejects invalid DELETE payloads", async () => {
+    const userId = createUser("-delete-invalid");
+    createSessionForUser(userId, "delete-invalid-token");
+    const invalidPayloads = [
+      null,
+      [],
+      {},
+      { ids: [] },
+      { ids: [0] },
+      { ids: [-1] },
+      { ids: ["1"] },
+      { ids: [1, 1] },
+      { ids: Array.from({ length: 101 }, (_, index) => index + 1) },
+    ];
+
+    for (const payload of invalidPayloads) {
+      const res = await transactionsDelete(
+        createDeleteRequest("delete-invalid-token", payload),
+      );
+      expect(res.status).toBe(400);
+    }
+  });
+
+  it("does not partially delete when any id is missing or belongs to another user", async () => {
+    const ownerId = createUser("-delete-owner");
+    const ownerAccountId = createFinancialAccount(ownerId);
+    const ownedTransactionId = createTransaction(ownerAccountId);
+
+    const otherUserId = createUser("-delete-other");
+    const otherAccountId = createFinancialAccount(otherUserId);
+    const foreignTransactionId = createTransaction(otherAccountId);
+    createSessionForUser(ownerId, "delete-owner-token");
+
+    const foreignIdResponse = await transactionsDelete(
+      createDeleteRequest("delete-owner-token", {
+        ids: [ownedTransactionId, foreignTransactionId],
+      }),
+    );
+    const missingIdResponse = await transactionsDelete(
+      createDeleteRequest("delete-owner-token", {
+        ids: [ownedTransactionId, 999999],
+      }),
+    );
+    expect(foreignIdResponse.status).toBe(404);
+    expect(missingIdResponse.status).toBe(404);
+    const stillPresent = db
+      .query("SELECT id FROM transactions WHERE id IN (?, ?)")
+      .all(ownedTransactionId, foreignTransactionId);
+    expect(stillPresent).toHaveLength(2);
+  });
+
+  it("returns 400 for malformed JSON in DELETE requests", async () => {
+    const userId = createUser("-delete-malformed");
+    createSessionForUser(userId, "delete-malformed-token");
+
+    const res = await transactionsDelete(
+      new Request("http://localhost/api/user/transactions", {
+        method: "DELETE",
+        headers: {
+          "content-type": "application/json",
+          cookie: "session_token=delete-malformed-token",
+        },
+        body: "{invalid",
+      }),
+    );
+    const body = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(body.error).toBe("Request body must be valid JSON");
+  });
+
+  it("rolls back a bulk delete when the delete query fails", async () => {
+    const userId = createUser("-delete-error");
+    const accountId = createFinancialAccount(userId);
+    createSessionForUser(userId, "delete-error-token");
+    const transactionId = createTransaction(accountId);
+
+    db.query = ((sql: string) => {
+      if (sql.startsWith("DELETE FROM transactions")) {
+        return {
+          run: () => {
+            throw new Error("forced delete failure");
+          },
+        };
+      }
+      return originalQuery(sql);
+    }) as typeof db.query;
+
+    try {
+      const res = await transactionsDelete(
+        createDeleteRequest("delete-error-token", { ids: [transactionId] }),
+      );
+      const body = await res.json();
+
+      expect(res.status).toBe(500);
+      expect(body.error).toBe("Internal server error");
+      expect(
+        db.query("SELECT id FROM transactions WHERE id = ?").get(transactionId),
+      ).not.toBeNull();
     } finally {
       db.query = originalQuery;
     }
