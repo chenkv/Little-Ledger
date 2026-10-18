@@ -131,6 +131,232 @@ export async function POST(req: Request) {
   }
 }
 
+export async function PATCH(req: Request) {
+  try {
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    let requestBody: unknown;
+    try {
+      requestBody = await req.json();
+    } catch {
+      return NextResponse.json(
+        { error: "Request body must be valid JSON" },
+        { status: 400 },
+      );
+    }
+
+    if (
+      !requestBody ||
+      typeof requestBody !== "object" ||
+      Array.isArray(requestBody)
+    ) {
+      return NextResponse.json(
+        { error: "Request body must be a transaction object" },
+        { status: 400 },
+      );
+    }
+
+    const transaction = requestBody as Record<string, unknown>;
+    const id = transaction.id;
+    if (typeof id !== "number" || !Number.isSafeInteger(id) || id <= 0) {
+      return NextResponse.json(
+        { error: "Transaction id must be a positive integer" },
+        { status: 400 },
+      );
+    }
+
+    const updateFields = Object.entries(transaction).filter(
+      ([key]) => key !== "id",
+    );
+    if (updateFields.length === 0) {
+      return NextResponse.json(
+        { error: "No fields provided to update" },
+        { status: 400 },
+      );
+    }
+
+    const existingTransaction = db
+      .query(
+        `SELECT transactions.id
+         FROM transactions
+         JOIN financial_accounts
+           ON financial_accounts.id = transactions.financial_account_id
+         WHERE transactions.id = ? AND financial_accounts.user_id = ?`,
+      )
+      .get(id, userId);
+
+    if (!existingTransaction) {
+      return NextResponse.json(
+        { error: "No transaction found with the provided id" },
+        { status: 404 },
+      );
+    }
+
+    const allowedFields = new Set([
+      "financial_account_id",
+      "date",
+      "description",
+      "amount",
+      "category_id",
+    ]);
+    const setClauses: string[] = [];
+    const params: (string | number | null)[] = [];
+
+    for (const [key, value] of updateFields) {
+      if (!allowedFields.has(key)) {
+        return NextResponse.json(
+          { error: `Field cannot be updated: ${key}` },
+          { status: 400 },
+        );
+      }
+      if (
+        value !== null &&
+        typeof value !== "string" &&
+        typeof value !== "number"
+      ) {
+        return NextResponse.json(
+          { error: `Invalid value for field: ${key}` },
+          { status: 400 },
+        );
+      }
+
+      if (key === "financial_account_id") {
+        if (
+          typeof value !== "number" ||
+          !Number.isSafeInteger(value) ||
+          value <= 0
+        ) {
+          return NextResponse.json(
+            { error: `${key} must be a positive integer` },
+            { status: 400 },
+          );
+        }
+        const account = db
+          .query(
+            "SELECT id FROM financial_accounts WHERE id = ? AND user_id = ?",
+          )
+          .get(value, userId);
+        if (!account) {
+          return NextResponse.json(
+            {
+              error:
+                "financial_account_id must belong to the authenticated user",
+            },
+            { status: 400 },
+          );
+        }
+      } else if (key === "category_id") {
+        if (
+          value !== null &&
+          (typeof value !== "number" ||
+            !Number.isSafeInteger(value) ||
+            value <= 0)
+        ) {
+          return NextResponse.json(
+            { error: "category_id must be null or a positive integer" },
+            { status: 400 },
+          );
+        }
+        if (value !== null) {
+          const category = db
+            .query("SELECT id FROM categories WHERE id = ? AND user_id = ?")
+            .get(value, userId);
+          if (!category) {
+            return NextResponse.json(
+              { error: "category_id must belong to the authenticated user" },
+              { status: 400 },
+            );
+          }
+        }
+      } else if (key === "amount") {
+        if (typeof value !== "number" || !Number.isFinite(value)) {
+          return NextResponse.json(
+            { error: "amount must be a valid number" },
+            { status: 400 },
+          );
+        }
+      } else if (key === "date") {
+        const parsedDate =
+          typeof value === "string" ? new Date(`${value}T00:00:00.000Z`) : null;
+        if (
+          typeof value !== "string" ||
+          !parsedDate ||
+          !/^\d{4}-\d{2}-\d{2}$/.test(value) ||
+          Number.isNaN(parsedDate.getTime()) ||
+          parsedDate.toISOString().slice(0, 10) !== value
+        ) {
+          return NextResponse.json(
+            { error: "date must be in YYYY-MM-DD format" },
+            { status: 400 },
+          );
+        }
+      } else if (
+        key === "description" &&
+        value !== null &&
+        typeof value !== "string"
+      ) {
+        return NextResponse.json(
+          { error: "description must be a string or null" },
+          { status: 400 },
+        );
+      }
+
+      setClauses.push(`${key} = ?`);
+      params.push(value);
+    }
+
+    params.push(id, userId);
+    const updateStmt = db.query(
+      `UPDATE transactions
+       SET ${setClauses.join(", ")}
+       WHERE id = ?
+         AND EXISTS (
+           SELECT 1
+           FROM financial_accounts
+           WHERE financial_accounts.id = transactions.financial_account_id
+             AND financial_accounts.user_id = ?
+         )`,
+    );
+
+    const result = updateStmt.run(...params);
+
+    if (result.changes === 0) {
+      return NextResponse.json(
+        { error: "No transaction found with the provided id" },
+        { status: 404 },
+      );
+    }
+
+    const updatedTransaction = db
+      .query(
+        `SELECT transactions.id, transactions.financial_account_id, transactions.date,
+                transactions.description, transactions.amount, transactions.category_id
+         FROM transactions
+         JOIN financial_accounts
+           ON financial_accounts.id = transactions.financial_account_id
+         WHERE transactions.id = ? AND financial_accounts.user_id = ?`,
+      )
+      .get(id, userId);
+
+    return NextResponse.json(
+      {
+        message: "Transaction updated successfully",
+        transaction: updatedTransaction,
+      },
+      { status: 200 },
+    );
+  } catch (error) {
+    console.error("Transaction update error:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
+  }
+}
+
 export async function GET(req: Request) {
   const userId = await getUserIdFromRequest(req);
   if (!userId) {
