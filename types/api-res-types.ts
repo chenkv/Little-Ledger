@@ -22,7 +22,7 @@ export type transactions_get = {
       date: string;
       description: string;
       amount: number;
-      category_id: number;
+      category_id: number | null;
     },
   ];
   pagination: {

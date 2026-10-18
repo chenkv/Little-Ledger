@@ -4,7 +4,9 @@ process.env.LEDGER_DB_PATH = ":memory:";
 
 import db from "@/lib/db";
 import {
+  DELETE as transactionsDelete,
   GET as transactionsGet,
+  PATCH as transactionsPatch,
   POST as transactionsPost,
 } from "@/app/api/user/transactions/route";
 import { transaction_row } from "@/types/api-res-types";
@@ -52,6 +54,48 @@ function createCategory(userId: number, name: string) {
   );
   const result = insertCategory.run(userId, name, "expense");
   return result.lastInsertRowid as number;
+}
+
+function createTransaction(
+  accountId: number,
+  date = "2026-08-05",
+  description: string | null = "Original transaction",
+  amount = 12.5,
+  categoryId: number | null = null,
+) {
+  const insertTransaction = db.query(
+    "INSERT INTO transactions (financial_account_id, date, description, amount, category_id) VALUES (?, ?, ?, ?, ?)",
+  );
+  const result = insertTransaction.run(
+    accountId,
+    date,
+    description,
+    amount,
+    categoryId,
+  );
+  return result.lastInsertRowid as number;
+}
+
+function createPatchRequest(token: string, body: unknown) {
+  return new Request("http://localhost/api/user/transactions", {
+    method: "PATCH",
+    headers: {
+      "content-type": "application/json",
+      cookie: `session_token=${token}`,
+    },
+    body: JSON.stringify(body),
+  });
+}
+
+function createDeleteRequest(token: string, body: unknown) {
+  return new Request("http://localhost/api/user/transactions", {
+    method: "DELETE",
+    headers: {
+      "content-type": "application/json",
+      cookie: `session_token=${token}`,
+    },
+    body: JSON.stringify(body),
+  });
 }
 
 describe("transactions endpoint", () => {
@@ -285,6 +329,440 @@ describe("transactions endpoint", () => {
     expect(body.error).toBe("Transaction list cannot be empty");
   });
 
+  it("updates the requested transaction columns for its owner", async () => {
+    const userId = createUser("-patch");
+    const sourceAccountId = createFinancialAccount(userId);
+    const targetAccountId = createFinancialAccount(userId);
+    const categoryId = createCategory(userId, "Updated category");
+    createSessionForUser(userId, "patch-update-token");
+    const transactionId = createTransaction(sourceAccountId);
+
+    const res = await transactionsPatch(
+      createPatchRequest("patch-update-token", {
+        id: transactionId,
+        financial_account_id: targetAccountId,
+        date: "2026-09-12",
+        description: "Updated transaction",
+        amount: -45.75,
+        category_id: categoryId,
+      }),
+    );
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.message).toBe("Transaction updated successfully");
+    expect(body.transaction).toEqual({
+      id: transactionId,
+      financial_account_id: targetAccountId,
+      date: "2026-09-12",
+      description: "Updated transaction",
+      amount: -45.75,
+      category_id: categoryId,
+    });
+  });
+
+  it("allows clearing nullable description and category fields", async () => {
+    const userId = createUser("-patch-nullable");
+    const accountId = createFinancialAccount(userId);
+    const categoryId = createCategory(userId, "To clear");
+    createSessionForUser(userId, "patch-nullable-token");
+    const transactionId = createTransaction(
+      accountId,
+      "2026-08-05",
+      "Clear these fields",
+      8,
+      categoryId,
+    );
+
+    const res = await transactionsPatch(
+      createPatchRequest("patch-nullable-token", {
+        id: transactionId,
+        description: null,
+        category_id: null,
+      }),
+    );
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.transaction.description).toBeNull();
+    expect(body.transaction.category_id).toBeNull();
+    expect(body.transaction.amount).toBe(8);
+  });
+
+  it("returns 401 for PATCH when authorization is missing", async () => {
+    const res = await transactionsPatch(
+      new Request("http://localhost/api/user/transactions", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ id: 1, amount: 5 }),
+      }),
+    );
+    const body = await res.json();
+
+    expect(res.status).toBe(401);
+    expect(body.error).toBe("Unauthorized");
+  });
+
+  it("returns 400 when a PATCH request body is malformed JSON", async () => {
+    const userId = createUser("-patch-malformed-json");
+    createSessionForUser(userId, "patch-malformed-json-token");
+
+    const res = await transactionsPatch(
+      new Request("http://localhost/api/user/transactions", {
+        method: "PATCH",
+        headers: {
+          "content-type": "application/json",
+          cookie: "session_token=patch-malformed-json-token",
+        },
+        body: "{invalid",
+      }),
+    );
+    const body = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(body.error).toBe("Request body must be valid JSON");
+  });
+
+  it("rejects malformed PATCH payloads and requests without update fields", async () => {
+    const userId = createUser("-patch-invalid");
+    createSessionForUser(userId, "patch-invalid-token");
+
+    const invalidBodies = [
+      null,
+      [],
+      { amount: 5 },
+      { id: "1", amount: 5 },
+      { id: 1 },
+    ];
+
+    for (const payload of invalidBodies) {
+      const res = await transactionsPatch(
+        createPatchRequest("patch-invalid-token", payload),
+      );
+      expect(res.status).toBe(400);
+    }
+  });
+
+  it("rejects unsupported columns instead of interpolating them into SQL", async () => {
+    const userId = createUser("-patch-unsupported");
+    const accountId = createFinancialAccount(userId);
+    createSessionForUser(userId, "patch-unsupported-token");
+    const transactionId = createTransaction(accountId);
+
+    const res = await transactionsPatch(
+      createPatchRequest("patch-unsupported-token", {
+        id: transactionId,
+        "amount = 500; DROP TABLE transactions; --": 9,
+      }),
+    );
+    const body = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(body.error).toContain("Field cannot be updated");
+    const transactionCount = db
+      .query("SELECT COUNT(*) as count FROM transactions")
+      .get() as { count: number };
+    expect(transactionCount.count).toBe(1);
+  });
+
+  it("validates PATCH field values", async () => {
+    const userId = createUser("-patch-values");
+    const accountId = createFinancialAccount(userId);
+    createSessionForUser(userId, "patch-values-token");
+    const transactionId = createTransaction(accountId);
+    const invalidUpdates = [
+      { amount: "not-a-number" },
+      { date: "2026-02-30" },
+      { description: 123 },
+      { category_id: 0 },
+      { financial_account_id: -1 },
+    ];
+
+    for (const update of invalidUpdates) {
+      const res = await transactionsPatch(
+        createPatchRequest("patch-values-token", {
+          id: transactionId,
+          ...update,
+        }),
+      );
+      expect(res.status).toBe(400);
+    }
+  });
+
+  it("does not update transactions owned by another user", async () => {
+    const ownerId = createUser("-patch-owner");
+    const ownerAccountId = createFinancialAccount(ownerId);
+    const transactionId = createTransaction(ownerAccountId);
+
+    const otherUserId = createUser("-patch-other");
+    createSessionForUser(otherUserId, "patch-other-token");
+
+    const res = await transactionsPatch(
+      createPatchRequest("patch-other-token", {
+        id: transactionId,
+        description: "Unauthorized update",
+      }),
+    );
+    const body = await res.json();
+
+    expect(res.status).toBe(404);
+    expect(body.error).toBe("No transaction found with the provided id");
+    const transaction = db
+      .query("SELECT description FROM transactions WHERE id = ?")
+      .get(transactionId) as { description: string };
+    expect(transaction.description).toBe("Original transaction");
+  });
+
+  it("rejects foreign financial accounts and categories in updates", async () => {
+    const userId = createUser("-patch-target-owner");
+    const accountId = createFinancialAccount(userId);
+    createSessionForUser(userId, "patch-target-owner-token");
+    const transactionId = createTransaction(accountId);
+
+    const otherUserId = createUser("-patch-target-other");
+    const foreignAccountId = createFinancialAccount(otherUserId);
+    const foreignCategoryId = createCategory(otherUserId, "Foreign category");
+
+    for (const update of [
+      { financial_account_id: foreignAccountId },
+      { category_id: foreignCategoryId },
+    ]) {
+      const res = await transactionsPatch(
+        createPatchRequest("patch-target-owner-token", {
+          id: transactionId,
+          ...update,
+        }),
+      );
+      expect(res.status).toBe(400);
+    }
+
+    const transaction = db
+      .query(
+        "SELECT financial_account_id, category_id FROM transactions WHERE id = ?",
+      )
+      .get(transactionId) as {
+      financial_account_id: number;
+      category_id: number | null;
+    };
+    expect(transaction.financial_account_id).toBe(accountId);
+    expect(transaction.category_id).toBeNull();
+  });
+
+  it("returns 404 when the transaction id does not exist", async () => {
+    const userId = createUser("-patch-missing");
+    createSessionForUser(userId, "patch-missing-token");
+
+    const res = await transactionsPatch(
+      createPatchRequest("patch-missing-token", {
+        id: 999,
+        amount: 30,
+      }),
+    );
+    const body = await res.json();
+
+    expect(res.status).toBe(404);
+    expect(body.error).toBe("No transaction found with the provided id");
+  });
+
+  it("returns 500 when updating a transaction fails unexpectedly", async () => {
+    const userId = createUser("-patch-error");
+    const accountId = createFinancialAccount(userId);
+    createSessionForUser(userId, "patch-error-token");
+    const transactionId = createTransaction(accountId);
+
+    db.query = ((sql: string) => {
+      if (sql.startsWith("UPDATE transactions")) {
+        return {
+          run: () => {
+            throw new Error("forced update failure");
+          },
+        };
+      }
+      return originalQuery(sql);
+    }) as typeof db.query;
+
+    try {
+      const res = await transactionsPatch(
+        createPatchRequest("patch-error-token", {
+          id: transactionId,
+          amount: 25,
+        }),
+      );
+      const body = await res.json();
+
+      expect(res.status).toBe(500);
+      expect(body.error).toBe("Internal server error");
+    } finally {
+      db.query = originalQuery;
+    }
+  });
+
+  it("deletes one transaction belonging to the authenticated user", async () => {
+    const userId = createUser("-delete-single");
+    const accountId = createFinancialAccount(userId);
+    createSessionForUser(userId, "delete-single-token");
+    const transactionId = createTransaction(accountId);
+
+    const res = await transactionsDelete(
+      createDeleteRequest("delete-single-token", { ids: [transactionId] }),
+    );
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.message).toBe("Transactions deleted successfully");
+    expect(body.deletedCount).toBe(1);
+    expect(body.deletedIds).toEqual([transactionId]);
+    expect(
+      db.query("SELECT id FROM transactions WHERE id = ?").get(transactionId),
+    ).toBeNull();
+  });
+
+  it("deletes multiple transactions belonging to the authenticated user", async () => {
+    const userId = createUser("-delete-multiple");
+    const firstAccountId = createFinancialAccount(userId);
+    const secondAccountId = createFinancialAccount(userId);
+    createSessionForUser(userId, "delete-multiple-token");
+    const firstTransactionId = createTransaction(firstAccountId);
+    const secondTransactionId = createTransaction(
+      secondAccountId,
+      "2026-08-06",
+      "Another transaction",
+    );
+
+    const res = await transactionsDelete(
+      createDeleteRequest("delete-multiple-token", {
+        ids: [firstTransactionId, secondTransactionId],
+      }),
+    );
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.deletedCount).toBe(2);
+    expect(body.deletedIds).toEqual([firstTransactionId, secondTransactionId]);
+    const remaining = db
+      .query("SELECT id FROM transactions WHERE id IN (?, ?)")
+      .all(firstTransactionId, secondTransactionId);
+    expect(remaining).toHaveLength(0);
+  });
+
+  it("returns 401 for DELETE when authorization is missing", async () => {
+    const res = await transactionsDelete(
+      new Request("http://localhost/api/user/transactions", {
+        method: "DELETE",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ ids: [1] }),
+      }),
+    );
+    const body = await res.json();
+
+    expect(res.status).toBe(401);
+    expect(body.error).toBe("Unauthorized");
+  });
+
+  it("rejects invalid DELETE payloads", async () => {
+    const userId = createUser("-delete-invalid");
+    createSessionForUser(userId, "delete-invalid-token");
+    const invalidPayloads = [
+      null,
+      [],
+      {},
+      { ids: [] },
+      { ids: [0] },
+      { ids: [-1] },
+      { ids: ["1"] },
+      { ids: [1, 1] },
+      { ids: Array.from({ length: 101 }, (_, index) => index + 1) },
+    ];
+
+    for (const payload of invalidPayloads) {
+      const res = await transactionsDelete(
+        createDeleteRequest("delete-invalid-token", payload),
+      );
+      expect(res.status).toBe(400);
+    }
+  });
+
+  it("does not partially delete when any id is missing or belongs to another user", async () => {
+    const ownerId = createUser("-delete-owner");
+    const ownerAccountId = createFinancialAccount(ownerId);
+    const ownedTransactionId = createTransaction(ownerAccountId);
+
+    const otherUserId = createUser("-delete-other");
+    const otherAccountId = createFinancialAccount(otherUserId);
+    const foreignTransactionId = createTransaction(otherAccountId);
+    createSessionForUser(ownerId, "delete-owner-token");
+
+    const foreignIdResponse = await transactionsDelete(
+      createDeleteRequest("delete-owner-token", {
+        ids: [ownedTransactionId, foreignTransactionId],
+      }),
+    );
+    const missingIdResponse = await transactionsDelete(
+      createDeleteRequest("delete-owner-token", {
+        ids: [ownedTransactionId, 999999],
+      }),
+    );
+    expect(foreignIdResponse.status).toBe(404);
+    expect(missingIdResponse.status).toBe(404);
+    const stillPresent = db
+      .query("SELECT id FROM transactions WHERE id IN (?, ?)")
+      .all(ownedTransactionId, foreignTransactionId);
+    expect(stillPresent).toHaveLength(2);
+  });
+
+  it("returns 400 for malformed JSON in DELETE requests", async () => {
+    const userId = createUser("-delete-malformed");
+    createSessionForUser(userId, "delete-malformed-token");
+
+    const res = await transactionsDelete(
+      new Request("http://localhost/api/user/transactions", {
+        method: "DELETE",
+        headers: {
+          "content-type": "application/json",
+          cookie: "session_token=delete-malformed-token",
+        },
+        body: "{invalid",
+      }),
+    );
+    const body = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(body.error).toBe("Request body must be valid JSON");
+  });
+
+  it("rolls back a bulk delete when the delete query fails", async () => {
+    const userId = createUser("-delete-error");
+    const accountId = createFinancialAccount(userId);
+    createSessionForUser(userId, "delete-error-token");
+    const transactionId = createTransaction(accountId);
+
+    db.query = ((sql: string) => {
+      if (sql.startsWith("DELETE FROM transactions")) {
+        return {
+          run: () => {
+            throw new Error("forced delete failure");
+          },
+        };
+      }
+      return originalQuery(sql);
+    }) as typeof db.query;
+
+    try {
+      const res = await transactionsDelete(
+        createDeleteRequest("delete-error-token", { ids: [transactionId] }),
+      );
+      const body = await res.json();
+
+      expect(res.status).toBe(500);
+      expect(body.error).toBe("Internal server error");
+      expect(
+        db.query("SELECT id FROM transactions WHERE id = ?").get(transactionId),
+      ).not.toBeNull();
+    } finally {
+      db.query = originalQuery;
+    }
+  });
+
   it("returns 400 when a transaction item is invalid", async () => {
     const userId = createUser();
     createSessionForUser(userId, "invalid-item-token");
@@ -510,6 +988,79 @@ describe("transactions endpoint", () => {
     expect(body.error).toBe(
       "page must be a positive integer and limit must be an integer between 1 and 100",
     );
+  });
+
+  it("filters transactions by accountId and keeps the filter scoped to the user", async () => {
+    const userId = createUser("-account-filter");
+    const selectedAccountId = createFinancialAccount(userId);
+    const otherAccountId = createFinancialAccount(userId);
+    createSessionForUser(userId, "get-account-filter-token");
+
+    const otherUserId = createUser("-account-filter-other");
+    const foreignAccountId = createFinancialAccount(otherUserId);
+
+    const insertTransaction = db.query(
+      "INSERT INTO transactions (financial_account_id, date, description, amount, category_id) VALUES (?, ?, ?, ?, ?)",
+    );
+    insertTransaction.run(
+      selectedAccountId,
+      "2026-08-08",
+      "Selected account purchase",
+      10.0,
+      null,
+    );
+    insertTransaction.run(
+      otherAccountId,
+      "2026-08-09",
+      "Other account purchase",
+      20.0,
+      null,
+    );
+    insertTransaction.run(
+      foreignAccountId,
+      "2026-08-10",
+      "Foreign account purchase",
+      30.0,
+      null,
+    );
+
+    const req = new Request(
+      `http://localhost/api/user/transactions?accountId=${selectedAccountId}`,
+      {
+        method: "GET",
+        headers: { authorization: "Bearer get-account-filter-token" },
+      },
+    );
+
+    const res = await transactionsGet(req);
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.transactions).toHaveLength(1);
+    expect(body.transactions[0].financial_account_id).toBe(selectedAccountId);
+    expect(body.pagination.total).toBe(1);
+  });
+
+  it("returns 400 when accountId is not a positive integer", async () => {
+    const userId = createUser("-invalid-account-filter");
+    createFinancialAccount(userId);
+    createSessionForUser(userId, "get-invalid-account-filter-token");
+
+    const req = new Request(
+      "http://localhost/api/user/transactions?accountId=not-an-id",
+      {
+        method: "GET",
+        headers: {
+          authorization: "Bearer get-invalid-account-filter-token",
+        },
+      },
+    );
+
+    const res = await transactionsGet(req);
+    const body = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(body.error).toBe("accountId must be a positive integer");
   });
 
   it("filters transactions by category", async () => {
