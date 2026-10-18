@@ -337,7 +337,7 @@ export default function AccountTransactions({
                   onKeyDown={(event) =>
                     handleTransactionRowKeyDown(event, transaction)
                   }
-                  className="flex space-x-2 justify-between items-center p-4 bg-(--surface-variant) dark:bg-(--surface-variant-dark) ring-2 ring-transparent hover:ring-(--primary-dark) hover:cursor-pointer rounded-lg"
+                  className="flex space-x-2 justify-between items-center p-4 select-none bg-(--surface-variant) dark:bg-(--surface-variant-dark) ring-2 ring-transparent hover:ring-(--primary-dark) hover:cursor-pointer rounded-lg"
                 >
                   {editingTransactionId === transaction.id &&
                   editingTransaction ? (
@@ -346,7 +346,7 @@ export default function AccountTransactions({
                         type="button"
                         aria-label={`Delete transaction ${transaction.id}`}
                         onClick={() => handleDeleteTransaction(transaction.id)}
-                        className="text-red-500 hover:text-red-700 select-none hover:cursor-pointer"
+                        className="text-red-500 hover:text-red-700 hover:cursor-pointer"
                       >
                         X
                       </button>
@@ -409,7 +409,7 @@ export default function AccountTransactions({
                       <button
                         type="button"
                         onClick={handleDoneEditingTransaction}
-                        className="text-green-300 hover:text-green-500 select-none hover:cursor-pointer"
+                        className="text-green-300 hover:text-green-500 hover:cursor-pointer"
                       >
                         ✓
                       </button>

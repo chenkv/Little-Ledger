@@ -412,7 +412,7 @@ export default function AddTransactionsPopup({
                   onKeyDown={(event) =>
                     handleTransactionRowKeyDown(event, index)
                   }
-                  className="flex space-x-2 justify-between items-center px-4 py-2 bg-(--surface-variant) dark:bg-(--surface-variant-dark) ring-2 ring-transparent hover:ring-(--primary-dark) hover:cursor-pointer rounded-lg"
+                  className="flex space-x-2 justify-between items-center px-4 py-2 select-none bg-(--surface-variant) dark:bg-(--surface-variant-dark) ring-2 ring-transparent hover:ring-(--primary-dark) hover:cursor-pointer rounded-lg"
                 >
                   <button
                     type="button"
@@ -482,7 +482,7 @@ export default function AddTransactionsPopup({
                       </label>
                       <button
                         type="button"
-                        className="text-green-300 px-2 select-none hover:cursor-pointer"
+                        className="text-green-300 px-2 hover:cursor-pointer"
                         onClick={handleDoneEditing}
                       >
                         ✓
