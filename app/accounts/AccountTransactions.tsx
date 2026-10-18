@@ -16,6 +16,13 @@ type createAccountTransactionProps = {
   accountId: number | null;
 };
 
+type TransactionEditDraft = {
+  date: string;
+  description: string;
+  category_id: number | null;
+  amount: string;
+};
+
 async function fetcherAccount(url: string): Promise<transactions_get> {
   const response = await fetch(url);
   if (!response.ok) throw new Error("Failed to fetch account data.");
@@ -42,6 +49,14 @@ export default function AccountTransactions({
   const [pageSize, setPageSize] = useState<number>(20);
   const [enableFilters, setEnableFilters] = useState(false);
   const [addTransactionPopup, setAddTransactionPopup] = useState(false);
+  const [editingTransactionId, setEditingTransactionId] = useState<
+    number | null
+  >(null);
+  const [editingTransaction, setEditingTransaction] =
+    useState<TransactionEditDraft | null>(null);
+  const [transactionEditError, setTransactionEditError] = useState<
+    string | null
+  >(null);
   const [filters, setFilters] = useState<TransactionFilterValues>({
     name: "",
     category: "",
@@ -85,6 +100,141 @@ export default function AccountTransactions({
     accountId === null ? null : `/api/user/transactions${queryParams()}`,
     fetcherAccount,
   );
+
+  function startEditingTransaction(
+    transaction: transactions_get["transactions"][number],
+  ) {
+    if (editingTransactionId === transaction.id) {
+      return;
+    }
+
+    setEditingTransactionId(transaction.id);
+    setEditingTransaction({
+      date: transaction.date,
+      description: transaction.description ?? "",
+      category_id: transaction.category_id,
+      amount: String(transaction.amount),
+    });
+    setTransactionEditError(null);
+  }
+
+  function handleTransactionRowClick(
+    event: React.MouseEvent<HTMLLIElement>,
+    transaction: transactions_get["transactions"][number],
+  ) {
+    if (
+      event.target instanceof HTMLElement &&
+      event.target.closest("button, input, select")
+    ) {
+      return;
+    }
+    startEditingTransaction(transaction);
+  }
+
+  function handleTransactionRowKeyDown(
+    event: React.KeyboardEvent<HTMLLIElement>,
+    transaction: transactions_get["transactions"][number],
+  ) {
+    if (
+      event.target === event.currentTarget &&
+      (event.key === "Enter" || event.key === " ")
+    ) {
+      event.preventDefault();
+      startEditingTransaction(transaction);
+    }
+  }
+
+  function updateEditingTransaction(updates: Partial<TransactionEditDraft>) {
+    setEditingTransaction((previous) =>
+      previous ? { ...previous, ...updates } : previous,
+    );
+    setTransactionEditError(null);
+  }
+
+  async function handleDoneEditingTransaction() {
+    if (!editingTransaction || editingTransactionId === null) {
+      return;
+    }
+
+    const amount = Number(editingTransaction.amount);
+    if (
+      !editingTransaction.date ||
+      !editingTransaction.description.trim() ||
+      editingTransaction.amount.trim() === "" ||
+      !Number.isFinite(amount)
+    ) {
+      setTransactionEditError(
+        "Enter a date, description, and valid amount before saving.",
+      );
+      return;
+    }
+
+    setTransactionEditError(null);
+
+    try {
+      const response = await fetch("/api/user/transactions", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id: editingTransactionId,
+          date: editingTransaction.date,
+          description: editingTransaction.description,
+          category_id: editingTransaction.category_id,
+          amount,
+        }),
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error ?? "Failed to update transaction.");
+      }
+
+      setEditingTransactionId(null);
+      setEditingTransaction(null);
+      void mutate();
+    } catch (updateError) {
+      setTransactionEditError(
+        updateError instanceof Error
+          ? updateError.message
+          : "Failed to update transaction.",
+      );
+    }
+  }
+
+  async function handleDeleteTransaction(transactionId: number) {
+    if (editingTransactionId === null) {
+      return;
+    }
+
+    setTransactionEditError(null);
+
+    try {
+      const response = await fetch("/api/user/transactions", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ ids: [transactionId] }),
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error ?? "Failed to delete transaction.");
+      }
+
+      setEditingTransactionId(null);
+      setEditingTransaction(null);
+      void mutate();
+    } catch (deleteError) {
+      setTransactionEditError(
+        deleteError instanceof Error
+          ? deleteError.message
+          : "Failed to delete transaction.",
+      );
+    }
+  }
 
   if (accountId === null) {
     return (
@@ -150,28 +300,121 @@ export default function AccountTransactions({
               {data.transactions.map((transaction) => (
                 <li
                   key={transaction.id}
-                  className="flex justify-between items-center p-4 bg-(--surface-variant) dark:bg-(--surface-variant-dark) ring-2 ring-transparent hover:ring-(--primary-dark) hover:cursor-pointer rounded-lg"
+                  role="group"
+                  aria-label={`Transaction ${transaction.id}${editingTransactionId === transaction.id ? ", editing" : ", click to edit"}`}
+                  tabIndex={0}
+                  onClick={(event) =>
+                    handleTransactionRowClick(event, transaction)
+                  }
+                  onKeyDown={(event) =>
+                    handleTransactionRowKeyDown(event, transaction)
+                  }
+                  className="flex space-x-2 justify-between items-center p-4 bg-(--surface-variant) dark:bg-(--surface-variant-dark) ring-2 ring-transparent hover:ring-(--primary-dark) hover:cursor-pointer rounded-lg"
                 >
-                  <p className="flex-none w-30 font-medium">
-                    {transaction.date}
-                  </p>
-                  <p className="grow wrap-anywhere font-medium">
-                    {transaction.description}
-                  </p>
-                  <p className="flex-none w-30 font-medium">
-                    {categoriesData?.categories.find(
-                      (c) => c.id === transaction.category_id,
-                    )?.name || ""}
-                  </p>
-                  <div
-                    className={`flex-none flex justify-end w-30 font-semibold ${transaction.amount > 0 ? "text-red-300" : "text-green-300"}`}
-                  >
-                    {transaction.amount > 0 ? "-" : "+"}$
-                    {Math.abs(transaction.amount).toFixed(2)}
-                  </div>
+                  {editingTransactionId === transaction.id &&
+                  editingTransaction ? (
+                    <>
+                      <button
+                        type="button"
+                        aria-label={`Delete transaction ${transaction.id}`}
+                        onClick={() => handleDeleteTransaction(transaction.id)}
+                        className="text-red-500 hover:text-red-700 select-none hover:cursor-pointer"
+                      >
+                        X
+                      </button>
+                      <input
+                        type="date"
+                        aria-label="Transaction date"
+                        value={editingTransaction.date}
+                        onChange={(event) =>
+                          updateEditingTransaction({
+                            date: event.currentTarget.value,
+                          })
+                        }
+                        className="flex-none px-2 py-1 border border-gray-300 dark:border-(--border-dark) rounded-md"
+                      />
+                      <input
+                        type="text"
+                        aria-label="Transaction description"
+                        value={editingTransaction.description}
+                        onChange={(event) =>
+                          updateEditingTransaction({
+                            description: event.currentTarget.value,
+                          })
+                        }
+                        className="grow min-w-0 px-2 py-1 border border-gray-300 dark:border-(--border-dark) rounded-md"
+                      />
+                      <select
+                        aria-label="Transaction category"
+                        value={editingTransaction.category_id ?? ""}
+                        onChange={(event) =>
+                          updateEditingTransaction({
+                            category_id: event.currentTarget.value
+                              ? Number(event.currentTarget.value)
+                              : null,
+                          })
+                        }
+                        className="flex-none max-w-48 px-2 py-1 border border-gray-300 dark:border-(--border-dark) rounded-md"
+                      >
+                        <option value="">Uncategorized</option>
+                        {categoriesData?.categories.map((category) => (
+                          <option key={category.id} value={category.id}>
+                            {category.name} ({category.type})
+                          </option>
+                        ))}
+                      </select>
+                      <label className="flex-none">
+                        <span className="sr-only">Transaction amount</span>
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          aria-label="Transaction amount"
+                          value={editingTransaction.amount}
+                          onChange={(event) =>
+                            updateEditingTransaction({
+                              amount: event.currentTarget.value,
+                            })
+                          }
+                          className="w-28 px-2 py-1 border border-gray-300 dark:border-(--border-dark) rounded-md"
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        onClick={handleDoneEditingTransaction}
+                        className="text-green-300 hover:text-green-500 select-none hover:cursor-pointer"
+                      >
+                        ✓
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <p className="flex-none w-30 font-medium">
+                        {transaction.date}
+                      </p>
+                      <p className="grow wrap-anywhere font-medium">
+                        {transaction.description}
+                      </p>
+                      <p className="flex-none w-30 font-medium">
+                        {categoriesData?.categories.find(
+                          (c) => c.id === transaction.category_id,
+                        )?.name || ""}
+                      </p>
+                      <div
+                        className={`flex-none flex justify-end w-30 font-semibold ${transaction.amount > 0 ? "text-red-300" : "text-green-300"}`}
+                      >
+                        {transaction.amount > 0 ? "-" : "+"}$
+                        {Math.abs(transaction.amount).toFixed(2)}
+                      </div>
+                    </>
+                  )}
                 </li>
               ))}
             </ul>
+            {transactionEditError && (
+              <p role="alert" className="mt-2 text-red-400">
+                {transactionEditError}
+              </p>
+            )}
             <nav
               aria-label="Transaction pages"
               className="mt-4 flex flex-col flex-wrap items-center justify-center gap-4"
