@@ -34,7 +34,7 @@ export default async function RootLayout({
           <Header />
 
           {/* Main Content */}
-          <main className="flex-1">{children}</main>
+          <main className="flex flex-1 flex-col">{children}</main>
 
           {/* Footer */}
           <footer
