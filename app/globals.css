@@ -11,6 +11,39 @@
   display: none;
 }
 
+@keyframes analysis-slide-in {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes analysis-slide-out {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+.analysis-panel-entering {
+  animation: analysis-slide-in 300ms ease-in-out both;
+}
+
+.analysis-panel-exiting {
+  animation: analysis-slide-out 300ms ease-in-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .analysis-panel-entering,
+  .analysis-panel-exiting {
+    animation: none;
+  }
+}
+
 :root {
   /* Light Mode — Cabin in the Forest */
   --bg: #f7f3ee;

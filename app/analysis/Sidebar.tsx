@@ -37,7 +37,7 @@ export default function Sidebar({ active, setActive }: SidebarProps) {
   }
 
   return (
-    <div className="flex-1 w-[20vw] px-4 flex flex-col text-left bg-(--card-dark) rounded-tr-3xl">
+    <div className="w-[20vw] z-10 px-4 flex flex-col text-left bg-(--card-dark) rounded-tr-3xl">
       <div
         data-value="spending"
         className="relative py-6 border-b-2 border-(--border) dark:border-(--border-dark) last:border-none hover:cursor-pointer select-none"
