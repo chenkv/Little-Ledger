@@ -7,6 +7,8 @@ const databasePath =
   (isTestEnv ? "TEST-ledger-data.db" : "ledger-data.db");
 const db = new Database(databasePath, { create: true });
 
+const defaultFinancialInstitutions = ["Chase", "Discover", "American Express"];
+
 db.run("PRAGMA foreign_keys = ON;");
 
 // USERS
@@ -32,6 +34,24 @@ db.run(`
   );
 `);
 
+db.run(`
+  CREATE TABLE IF NOT EXISTS financial_institutions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL
+  );
+`);
+
+const insertFinancialInstitution = db.prepare(`
+  INSERT INTO financial_institutions (name)
+  SELECT ? WHERE NOT EXISTS (
+    SELECT 1 FROM financial_institutions WHERE name = ?
+  );
+`);
+
+for (const name of defaultFinancialInstitutions) {
+  insertFinancialInstitution.run(name, name);
+}
+
 // FINANCIAL ACCOUNTS (per user)
 db.run(`
   CREATE TABLE IF NOT EXISTS financial_accounts (
@@ -39,10 +59,11 @@ db.run(`
     user_id INTEGER NOT NULL,
     name TEXT NOT NULL,
     type TEXT NOT NULL,
-    institution TEXT,
+    institution INTEGER NOT NULL,
     description TEXT,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY(institution) REFERENCES financial_institutions(id)
   );
 `);
 
@@ -67,7 +88,7 @@ db.run(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
     name TEXT NOT NULL,
-    type TEXT NOT NULL,
+    match_rules TEXT,
     FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
   );
 `);
