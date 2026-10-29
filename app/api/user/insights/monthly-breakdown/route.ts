@@ -28,7 +28,11 @@ export async function GET(req: Request) {
       )
       .all(userId, month);
 
-    return NextResponse.json({ transactions }, { status: 200 });
+    const total_spent = transactions.reduce((total, item) => {
+      return total + item["amount"];
+    }, 0);
+
+    return NextResponse.json({ transactions, total_spent }, { status: 200 });
   } catch (error) {
     console.error("Transactions retrieval error:", error);
     return NextResponse.json(
