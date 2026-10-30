@@ -44,8 +44,9 @@ export async function POST(req: Request) {
       const type = typeof account.type === "string" ? account.type.trim() : "";
       const institution =
         typeof account.institution === "string"
-          ? account.institution.trim()
-          : "";
+          ? Number(account.institution)
+          : Number.NaN;
+
       const description =
         typeof account.description === "string"
           ? account.description.trim()
@@ -55,6 +56,28 @@ export async function POST(req: Request) {
         db.run("ROLLBACK");
         return NextResponse.json(
           { error: "name is required for each financial account" },
+          { status: 400 },
+        );
+      }
+
+      if (!Number.isInteger(institution) || institution <= 0) {
+        db.run("ROLLBACK");
+        return NextResponse.json(
+          {
+            error: "A valid institution is required for each financial account",
+          },
+          { status: 400 },
+        );
+      }
+
+      const institutionRecord = db
+        .query("SELECT name FROM financial_institutions WHERE id = ?")
+        .get(institution);
+
+      if (!institutionRecord) {
+        db.run("ROLLBACK");
+        return NextResponse.json(
+          { error: "The selected financial institution was not found" },
           { status: 400 },
         );
       }
@@ -78,7 +101,7 @@ export async function POST(req: Request) {
         id: result.lastInsertRowid,
         name,
         type,
-        institution,
+        institution: institutionRecord.name,
         description,
       });
     }
@@ -108,7 +131,13 @@ export async function GET(req: Request) {
 
     const accounts = db
       .query(
-        "SELECT id, name, type, institution, description FROM financial_accounts WHERE user_id = ?",
+        `SELECT financial_accounts.id, financial_accounts.name,
+          financial_accounts.type,
+          COALESCE(financial_institutions.name, CAST(financial_accounts.institution AS TEXT)) AS institution,
+          financial_accounts.description
+        FROM financial_accounts
+        LEFT JOIN financial_institutions ON financial_institutions.id = financial_accounts.institution
+        WHERE financial_accounts.user_id = ?`,
       )
       .all(userId);
 

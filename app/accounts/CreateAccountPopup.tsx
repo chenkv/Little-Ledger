@@ -1,5 +1,6 @@
 "use client";
 
+import useSWRImmutable from "swr/immutable";
 import { useState } from "react";
 
 type CreateAccountPopupProps = {
@@ -7,12 +8,38 @@ type CreateAccountPopupProps = {
   onAccountCreated: () => Promise<void>;
 };
 
+type FinancialInstitution = {
+  id: number;
+  name: string;
+};
+
+async function fetchFinancialInstitutions(
+  url: string,
+): Promise<FinancialInstitution[]> {
+  const response = await fetch(url);
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result.error ?? "Failed to fetch financial institutions.");
+  }
+
+  return result.institutions;
+}
+
 export default function CreateAccountPopup({
   setAccountPopup,
   onAccountCreated,
 }: CreateAccountPopupProps) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const {
+    data: institutions = [],
+    error: institutionsError,
+    isLoading: isLoadingInstitutions,
+  } = useSWRImmutable<FinancialInstitution[]>(
+    "/api/user/financial-institutions",
+    fetchFinancialInstitutions,
+  );
 
   async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -108,12 +135,19 @@ export default function CreateAccountPopup({
             <select
               name="institution"
               required
+              disabled={isLoadingInstitutions}
               className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-(--border-dark) rounded-md shadow-sm focus:outline-none focus:ring-(--primary-dark) focus:border-(--primary-dark)"
             >
-              <option value="">Select an Institution</option>
-              <option value="chase">Chase</option>
-              <option value="american-express">American Express</option>
-              <option value="discover">Discover</option>
+              <option value="">
+                {isLoadingInstitutions
+                  ? "Loading institutions..."
+                  : "Select an Institution"}
+              </option>
+              {institutions.map((institution) => (
+                <option key={institution.id} value={institution.id}>
+                  {institution.name}
+                </option>
+              ))}
             </select>
           </div>
           <div className="mb-4">
@@ -127,14 +161,21 @@ export default function CreateAccountPopup({
               className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-(--border-dark) rounded-md shadow-sm focus:outline-none focus:ring-(--primary-dark) focus:border-(--primary-dark)"
             />
           </div>
-          {errorMessage && (
+          {(errorMessage || institutionsError) && (
             <p role="alert" className="text-sm text-red-600 dark:text-red-400">
-              {errorMessage}
+              {errorMessage ??
+                (institutionsError instanceof Error
+                  ? institutionsError.message
+                  : "Failed to fetch financial institutions.")}
             </p>
           )}
           <button
             type="submit"
-            disabled={isSubmitting}
+            disabled={
+              isSubmitting ||
+              isLoadingInstitutions ||
+              Boolean(institutionsError)
+            }
             className="w-full py-2 px-auto bg-(--primary-dark) hover:bg-(--primary-hover-dark) hover:cursor-pointer text-white font-medium rounded-md shadow-sm focus:outline-none focus:ring-(--primary-dark) focus:border-(--primary-dark)"
           >
             {isSubmitting ? "Creating..." : "Submit"}

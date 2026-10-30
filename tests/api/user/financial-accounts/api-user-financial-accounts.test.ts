@@ -29,6 +29,13 @@ function createUser(suffix = "") {
   return result.lastInsertRowid as number;
 }
 
+function getChaseInstitutionId() {
+  const institution = db
+    .query("SELECT id FROM financial_institutions WHERE name = ?")
+    .get("Chase") as { id: number };
+  return institution.id;
+}
+
 describe("financial accounts endpoint", () => {
   beforeEach(() => {
     db.run("DELETE FROM financial_accounts");
@@ -50,13 +57,13 @@ describe("financial accounts endpoint", () => {
         {
           name: "Checking",
           type: "checking",
-          institution: "Test Bank",
+          institution: String(getChaseInstitutionId()),
           description: "Primary account",
         },
         {
           name: "Savings",
           type: "savings",
-          institution: "Test Bank",
+          institution: String(getChaseInstitutionId()),
           description: "Rainy day",
         },
       ]),
@@ -99,7 +106,7 @@ describe("financial accounts endpoint", () => {
       body: JSON.stringify({
         name: "Checking",
         type: "checking",
-        institution: "Test Bank",
+        institution: String(getChaseInstitutionId()),
         description: "Primary",
       }),
     });
@@ -167,7 +174,7 @@ describe("financial accounts endpoint", () => {
         {
           name: "",
           type: "checking",
-          institution: "Test Bank",
+          institution: String(getChaseInstitutionId()),
           description: "Primary account",
         },
       ]),
@@ -194,7 +201,7 @@ describe("financial accounts endpoint", () => {
         {
           name: "Checking",
           type: "",
-          institution: "Test Bank",
+          institution: String(getChaseInstitutionId()),
           description: "Primary account",
         },
       ]),
@@ -237,7 +244,7 @@ describe("financial accounts endpoint", () => {
           {
             name: "Checking",
             type: "checking",
-            institution: "Test Bank",
+            institution: String(getChaseInstitutionId()),
             description: "Primary account",
           },
         ]),
@@ -277,10 +284,16 @@ describe("financial accounts endpoint", () => {
       user1,
       "Checking",
       "checking",
-      "Test Bank",
+      getChaseInstitutionId(),
       "Primary account",
     );
-    insertAccount.run(user2, "Savings", "savings", "Test Bank", "Rainy day");
+    insertAccount.run(
+      user2,
+      "Savings",
+      "savings",
+      getChaseInstitutionId(),
+      "Rainy day",
+    );
 
     const req = new Request("http://localhost/api/user/financial-accounts", {
       method: "GET",
@@ -295,6 +308,7 @@ describe("financial accounts endpoint", () => {
     expect(body.accounts.length).toBe(1);
     expect(body.accounts[0].name).toBe("Checking");
     expect(body.accounts[0].type).toBe("checking");
+    expect(body.accounts[0].institution).toBe("Chase");
   });
 
   it("returns an empty account list when the user has no financial accounts", async () => {
