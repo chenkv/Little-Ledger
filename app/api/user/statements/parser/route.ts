@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { getUserIdFromRequest, extractPdfText } from "../../utils";
-import { getRule } from "./parse-rules";
+import { getUserIdFromRequest } from "../../utils";
+import { getRule } from "@/lib/parse-rules";
 
 export async function POST(req: Request) {
   const userId = await getUserIdFromRequest(req);
@@ -34,10 +34,10 @@ export async function POST(req: Request) {
     );
   }
 
-  const transactions = [];
   const extra = meta ? JSON.parse(meta.toString()) : {};
   const source = typeof extra.source === "string" ? extra.source : undefined;
-  const rule = getRule(source);
+  const source_type = typeof extra.type === "string" ? extra.type : undefined;
+  const rule = getRule(source, source_type);
 
   if (!rule) {
     return NextResponse.json(
@@ -46,67 +46,17 @@ export async function POST(req: Request) {
     );
   }
 
-  if (file.type.includes("application/pdf")) {
-    const arrayBuffer = await file.arrayBuffer();
-
-    // parse buffer, use extra metadata
-    const extractedText = await extractPdfText(arrayBuffer);
-
-    const sectionMatch = extractedText.match(rule.sectionPattern);
-    const section = sectionMatch ? sectionMatch[1] : extractedText;
-
-    const transactionRows = section.match(rule.transactionRowsPattern) || [];
-
-    for (const row of transactionRows) {
-      const match = row.match(rule.transactionRowPattern);
-      if (match) {
-        const date = match[1];
-        const description = rule.normalizeDescription
-          ? rule.normalizeDescription(match[2])
-          : match[2].trim().replace(/\s+/g, " ");
-        const amount = match[3];
-        transactions.push({ date, description, amount });
-      } else {
-        console.warn("Failed to parse row:", row);
-        return NextResponse.json(
-          { error: "Failed to parse a transaction row." },
-          { status: 400 },
-        );
-      }
-    }
-  } else if (file.type.includes("text/csv")) {
-    const csvText = await file.text();
-    const lines = csvText
-      .split(/\r?\n/)
-      .map((line) => line.trim())
-      .filter(Boolean);
-    const csvLines = rule.skipCsvHeader ? lines.slice(1) : lines;
-
-    if (!rule.csvRowPattern) {
-      return NextResponse.json(
-        { error: "No CSV parsing rule defined for the provided source" },
-        { status: 500 },
-      );
-    }
-
-    for (const row of csvLines) {
-      const match = row.match(rule.csvRowPattern);
-      if (match) {
-        const date = match[1].trim();
-        const description = match[2].trim();
-        const amount = match[3].trim();
-        // Ignoring negative amounts for now as they represent credits or payments
-        if (Number(amount) >= 0) {
-          transactions.push({ date, description, amount });
-        }
-      } else {
-        console.warn("Failed to parse CSV row:", row);
-        return NextResponse.json(
-          { error: "Failed to parse a transaction row." },
-          { status: 400 },
-        );
-      }
-    }
+  let transactions = [];
+  try {
+    transactions = await rule(file);
+  } catch (error) {
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error ? error.message : "Failed to parse statement",
+      },
+      { status: 400 },
+    );
   }
 
   if (transactions.length === 0) {

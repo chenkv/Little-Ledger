@@ -1,4 +1,5 @@
 import { Database } from "bun:sqlite";
+import { defaultFinancialInstitutions } from "./financial-constants";
 
 const isTestEnv =
   process.env.NODE_ENV === "test" || process.env.BUN_TEST === "true";
@@ -6,8 +7,6 @@ const databasePath =
   process.env.LEDGER_DB_PATH ||
   (isTestEnv ? "TEST-ledger-data.db" : "ledger-data.db");
 const db = new Database(databasePath, { create: true });
-
-const defaultFinancialInstitutions = ["Chase", "Discover", "American Express"];
 
 db.run("PRAGMA foreign_keys = ON;");
 
