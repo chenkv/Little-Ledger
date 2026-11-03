@@ -3,5 +3,6 @@
 coverageThreshold = 0.9
 
 coveragePathIgnorePatterns = [
-  "lib/**"
+  "lib/db.ts",
+  "lib/financial-constants.ts",
 ]
