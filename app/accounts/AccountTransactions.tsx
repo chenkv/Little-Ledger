@@ -279,6 +279,7 @@ export default function AccountTransactions({
         <AddTransactionsPopup
           accountId={accountId}
           institution={accounts.find((a) => a.id === accountId)?.institution}
+          accountType={accounts.find((a) => a.id === accountId)?.type}
           categories={categoriesData?.categories ?? []}
           setTransactionPopup={setAddTransactionPopup}
           onTransactionsAdded={() => {
@@ -428,9 +429,9 @@ export default function AccountTransactions({
                         )?.name || ""}
                       </p>
                       <div
-                        className={`flex-none flex justify-end w-30 font-semibold ${transaction.amount > 0 ? "text-red-300" : "text-green-300"}`}
+                        className={`flex-none flex justify-end w-30 font-semibold ${transaction.amount > 0 ? "text-green-300" : "text-red-300"}`}
                       >
-                        {transaction.amount > 0 ? "-" : "+"}$
+                        {transaction.amount > 0 ? "+" : "-"}$
                         {Math.abs(transaction.amount).toFixed(2)}
                       </div>
                     </>

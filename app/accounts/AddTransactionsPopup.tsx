@@ -6,6 +6,7 @@ import { parsed_transaction_row } from "@/types/api-res-types";
 type AddTransactionsPopupProps = {
   accountId: number;
   institution?: string | null;
+  accountType?: string;
   categories?: { id: number; name: string; type: string }[];
   setTransactionPopup: (enabled: boolean) => void;
   onTransactionsAdded: () => void;
@@ -25,6 +26,7 @@ type EditingTransaction = Omit<StagedTransaction, "amount"> & {
 export default function AddTransactionsPopup({
   accountId,
   institution,
+  accountType,
   categories,
   setTransactionPopup,
   onTransactionsAdded,
@@ -254,6 +256,7 @@ export default function AddTransactionsPopup({
       "meta",
       JSON.stringify({
         source: institution,
+        type: accountType,
       }),
     );
 
@@ -263,7 +266,11 @@ export default function AddTransactionsPopup({
     });
 
     if (!request.ok) {
-      setUploadFileError("Failed to parse: " + (await request.json()).message);
+      const result = await request.json();
+      setUploadFileError(
+        "Failed to parse: " +
+          (result.error ?? result.message ?? "Unknown parser error"),
+      );
 
       return;
     }
@@ -502,9 +509,9 @@ export default function AddTransactionsPopup({
                         )?.name || ""}
                       </p>
                       <div
-                        className={`flex-none flex justify-end w-30 font-semibold ${transaction.amount > 0 ? "text-red-300" : "text-green-300"}`}
+                        className={`flex-none flex justify-end w-30 font-semibold ${transaction.amount > 0 ? "text-green-300" : "text-red-300"}`}
                       >
-                        {transaction.amount > 0 ? "-" : "+"}$
+                        {transaction.amount > 0 ? "+" : "-"}$
                         {Math.abs(transaction.amount).toFixed(2)}
                       </div>
                     </>
