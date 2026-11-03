@@ -47,8 +47,8 @@ describe("categories endpoint", () => {
         authorization: "Bearer valid-category-token",
       },
       body: JSON.stringify([
-        { name: "Groceries", type: "expense" },
-        { name: "Salary", type: "income" },
+        { name: "Groceries", match_rules: "expense" },
+        { name: "Salary", match_rules: "income" },
       ]),
     });
 
@@ -59,7 +59,7 @@ describe("categories endpoint", () => {
     expect(Array.isArray(body.inserted)).toBe(true);
     expect(body.inserted.length).toBe(2);
     expect(body.inserted[0].name).toBe("Groceries");
-    expect(body.inserted[1].type).toBe("income");
+    expect(body.inserted[1].match_rules).toBe("income");
   });
 
   it("returns 401 when authorization is missing for POST", async () => {
@@ -86,7 +86,7 @@ describe("categories endpoint", () => {
         "content-type": "application/json",
         authorization: "Bearer invalid-body-token",
       },
-      body: JSON.stringify({ name: "Groceries", type: "expense" }),
+      body: JSON.stringify({ name: "Groceries", match_rules: "expense" }),
     });
 
     const res = await categoriesPost(req);
@@ -146,14 +146,16 @@ describe("categories endpoint", () => {
         "content-type": "application/json",
         authorization: "Bearer missing-fields-token",
       },
-      body: JSON.stringify([{ name: "Groceries", type: "" }]),
+      body: JSON.stringify([{ name: "Groceries", match_rules: "" }]),
     });
 
     const res = await categoriesPost(req);
     const body = await res.json();
 
     expect(res.status).toBe(400);
-    expect(body.error).toBe("name and type are required for each category");
+    expect(body.error).toBe(
+      "name and match_rules are required for each category",
+    );
   });
 
   it("returns 500 when category insertion throws an unexpected error", async () => {
@@ -179,7 +181,7 @@ describe("categories endpoint", () => {
           "content-type": "application/json",
           authorization: "Bearer catch-category-token",
         },
-        body: JSON.stringify([{ name: "Groceries", type: "expense" }]),
+        body: JSON.stringify([{ name: "Groceries", match_rules: "expense" }]),
       });
 
       const res = await categoriesPost(req);
@@ -210,7 +212,7 @@ describe("categories endpoint", () => {
 
     const user2 = createUser("-2");
     const insertCategory = db.query(
-      "INSERT INTO categories (user_id, name, type) VALUES (?, ?, ?)",
+      "INSERT INTO categories (user_id, name, match_rules) VALUES (?, ?, ?)",
     );
     insertCategory.run(user1, "Personal", "expense");
     insertCategory.run(user2, "Business", "income");
@@ -227,7 +229,7 @@ describe("categories endpoint", () => {
     expect(Array.isArray(body.categories)).toBe(true);
     expect(body.categories.length).toBe(1);
     expect(body.categories[0].name).toBe("Personal");
-    expect(body.categories[0].type).toBe("expense");
+    expect(body.categories[0].match_rules).toBe("expense");
   });
 
   it("returns an empty category list when the user has no categories", async () => {

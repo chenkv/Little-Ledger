@@ -27,6 +27,9 @@ function createUser(suffix = "") {
 }
 
 function createFinancialAccount(userId: number, name = "Checking") {
+  const institution = db
+    .query("SELECT id FROM financial_institutions WHERE name = ?")
+    .get("Chase") as { id: number };
   const insertAccount = db.query(
     "INSERT INTO financial_accounts (user_id, name, type, institution, description) VALUES (?, ?, ?, ?, ?)",
   );
@@ -34,7 +37,7 @@ function createFinancialAccount(userId: number, name = "Checking") {
     userId,
     name,
     "checking",
-    "Test Bank",
+    institution.id,
     "Primary account",
   );
   return result.lastInsertRowid as number;

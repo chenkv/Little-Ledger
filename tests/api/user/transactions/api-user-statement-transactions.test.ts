@@ -35,6 +35,9 @@ function createUser(suffix = "") {
 }
 
 function createFinancialAccount(userId: number) {
+  const institution = db
+    .query("SELECT id FROM financial_institutions WHERE name = ?")
+    .get("Chase") as { id: number };
   const insertAccount = db.query(
     "INSERT INTO financial_accounts (user_id, name, type, institution, description) VALUES (?, ?, ?, ?, ?)",
   );
@@ -42,7 +45,7 @@ function createFinancialAccount(userId: number) {
     userId,
     "Checking",
     "checking",
-    "Test Bank",
+    institution.id,
     "Test account",
   );
   return result.lastInsertRowid as number;
@@ -50,7 +53,7 @@ function createFinancialAccount(userId: number) {
 
 function createCategory(userId: number, name: string) {
   const insertCategory = db.query(
-    "INSERT INTO categories (user_id, name, type) VALUES (?, ?, ?)",
+    "INSERT INTO categories (user_id, name, match_rules) VALUES (?, ?, ?)",
   );
   const result = insertCategory.run(userId, name, "expense");
   return result.lastInsertRowid as number;
