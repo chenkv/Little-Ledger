@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from "bun:test";
 process.env.LEDGER_DB_PATH = ":memory:";
 
 import db from "@/lib/db";
-import { GET } from "@/app/api/user/dashboard/monthly-breakdown/route";
+import { GET } from "@/app/api/user/insights/monthly-breakdown/route";
 
 function createSessionForUser(userId: number, token: string) {
   const insertSession = db.query(
