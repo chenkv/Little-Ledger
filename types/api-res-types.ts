@@ -46,7 +46,7 @@ export type categories_get = {
     {
       id: number;
       name: string;
-      type: string;
+      match_rules: string;
     },
   ];
 };
