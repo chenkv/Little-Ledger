@@ -25,7 +25,7 @@ export async function POST(req: Request) {
     }
 
     const insertStmt = db.query(
-      "INSERT INTO categories (user_id, name, type) VALUES (?, ?, ?)",
+      "INSERT INTO categories (user_id, name, match_rules) VALUES (?, ?, ?)",
     );
 
     db.run("BEGIN");
@@ -42,19 +42,25 @@ export async function POST(req: Request) {
 
       const name =
         typeof category.name === "string" ? category.name.trim() : "";
-      const type =
-        typeof category.type === "string" ? category.type.trim() : "";
+      const matchRules =
+        typeof category.match_rules === "string"
+          ? category.match_rules.trim()
+          : "";
 
-      if (!name || !type) {
+      if (!name || !matchRules) {
         db.run("ROLLBACK");
         return NextResponse.json(
-          { error: "name and type are required for each category" },
+          { error: "name and match_rules are required for each category" },
           { status: 400 },
         );
       }
 
-      const result = insertStmt.run(userId, name, type);
-      inserted.push({ id: result.lastInsertRowid, name, type });
+      const result = insertStmt.run(userId, name, matchRules);
+      inserted.push({
+        id: result.lastInsertRowid,
+        name,
+        match_rules: matchRules,
+      });
     }
 
     db.run("COMMIT");
@@ -81,7 +87,7 @@ export async function GET(req: Request) {
     }
 
     const categories = db
-      .query("SELECT id, name, type FROM categories WHERE user_id = ?")
+      .query("SELECT id, name, match_rules FROM categories WHERE user_id = ?")
       .all(userId);
 
     return NextResponse.json({ categories }, { status: 200 });
