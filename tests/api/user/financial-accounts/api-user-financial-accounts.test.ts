@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "bun:test";
+import { beforeEach, describe, expect, it, spyOn } from "bun:test";
 
 process.env.LEDGER_DB_PATH = ":memory:";
 
@@ -187,6 +187,60 @@ describe("financial accounts endpoint", () => {
     expect(body.error).toBe("name is required for each financial account");
   });
 
+  it("returns 400 when a POST account has an invalid institution ID", async () => {
+    const userId = createUser();
+    createSessionForUser(userId, "invalid-institution-id-token");
+
+    const req = new Request("http://localhost/api/user/financial-accounts", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        cookie: "session_token=invalid-institution-id-token",
+      },
+      body: JSON.stringify([
+        {
+          name: "Checking",
+          type: "checking",
+          institution: "not-an-id",
+        },
+      ]),
+    });
+
+    const res = await financialAccountsPost(req);
+    const body = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(body.error).toBe(
+      "A valid institution is required for each financial account",
+    );
+  });
+
+  it("returns 400 when the POST institution ID does not exist", async () => {
+    const userId = createUser();
+    createSessionForUser(userId, "missing-institution-token");
+
+    const req = new Request("http://localhost/api/user/financial-accounts", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        cookie: "session_token=missing-institution-token",
+      },
+      body: JSON.stringify([
+        {
+          name: "Checking",
+          type: "checking",
+          institution: "999999",
+        },
+      ]),
+    });
+
+    const res = await financialAccountsPost(req);
+    const body = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(body.error).toBe("The selected financial institution was not found");
+  });
+
   it("returns 400 when a POST account is missing a type", async () => {
     const userId = createUser();
     createSessionForUser(userId, "missing-type-token");
@@ -219,6 +273,7 @@ describe("financial accounts endpoint", () => {
     createSessionForUser(userId, "catch-account-token");
 
     const originalQuery = db.query.bind(db);
+    const originalRun = db.run.bind(db);
     db.query = ((sql: string) => {
       if (
         typeof sql === "string" &&
@@ -232,6 +287,13 @@ describe("financial accounts endpoint", () => {
       }
       return originalQuery(sql);
     }) as typeof db.query;
+    db.run = ((sql: string) => {
+      if (sql === "ROLLBACK") {
+        throw new Error("forced rollback failure");
+      }
+      return originalRun(sql);
+    }) as typeof db.run;
+    const consoleWarnSpy = spyOn(console, "warn").mockImplementation(() => {});
 
     try {
       const req = new Request("http://localhost/api/user/financial-accounts", {
@@ -255,8 +317,12 @@ describe("financial accounts endpoint", () => {
 
       expect(res.status).toBe(500);
       expect(body.error).toBe("Internal Server Error");
+      expect(consoleWarnSpy).toHaveBeenCalled();
     } finally {
       db.query = originalQuery;
+      db.run = originalRun;
+      originalRun("ROLLBACK");
+      consoleWarnSpy.mockRestore();
     }
   });
 
@@ -326,5 +392,42 @@ describe("financial accounts endpoint", () => {
     expect(res.status).toBe(200);
     expect(Array.isArray(body.accounts)).toBe(true);
     expect(body.accounts.length).toBe(0);
+  });
+
+  it("returns 500 when retrieving financial accounts fails", async () => {
+    const userId = createUser("-retrieval-error");
+    createSessionForUser(userId, "account-retrieval-error-token");
+
+    const originalQuery = db.query.bind(db);
+    db.query = ((sql: string) => {
+      if (sql.includes("FROM financial_accounts")) {
+        return {
+          all: () => {
+            throw new Error("forced financial account retrieval failure");
+          },
+        };
+      }
+      return originalQuery(sql);
+    }) as typeof db.query;
+    const consoleErrorSpy = spyOn(console, "error").mockImplementation(
+      () => {},
+    );
+
+    try {
+      const req = new Request("http://localhost/api/user/financial-accounts", {
+        method: "GET",
+        headers: { cookie: "session_token=account-retrieval-error-token" },
+      });
+
+      const res = await financialAccountsGet(req);
+      const body = await res.json();
+
+      expect(res.status).toBe(500);
+      expect(body.error).toBe("Internal Server Error");
+      expect(consoleErrorSpy).toHaveBeenCalled();
+    } finally {
+      db.query = originalQuery;
+      consoleErrorSpy.mockRestore();
+    }
   });
 });

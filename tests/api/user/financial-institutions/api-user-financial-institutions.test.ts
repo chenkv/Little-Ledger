@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "bun:test";
+import { beforeEach, describe, expect, it, spyOn } from "bun:test";
 
 process.env.LEDGER_DB_PATH = ":memory:";
 
@@ -64,5 +64,47 @@ describe("financial institutions endpoint", () => {
     expect(body.institutions).toContainEqual(
       expect.objectContaining({ name: "American Express" }),
     );
+  });
+
+  it("returns 500 when retrieving financial institutions fails", async () => {
+    const userId = createUser();
+    createSessionForUser(userId, "financial-institutions-error-token");
+
+    const originalQuery = db.query.bind(db);
+    db.query = ((sql: string) => {
+      if (sql.includes("FROM financial_institutions ORDER BY name")) {
+        return {
+          all: () => {
+            throw new Error("forced financial institution retrieval failure");
+          },
+        };
+      }
+      return originalQuery(sql);
+    }) as typeof db.query;
+    const consoleErrorSpy = spyOn(console, "error").mockImplementation(
+      () => {},
+    );
+
+    try {
+      const req = new Request(
+        "http://localhost/api/user/financial-institutions",
+        {
+          method: "GET",
+          headers: {
+            cookie: "session_token=financial-institutions-error-token",
+          },
+        },
+      );
+
+      const res = await financialInstitutionsGet(req);
+      const body = await res.json();
+
+      expect(res.status).toBe(500);
+      expect(body.error).toBe("Internal Server Error");
+      expect(consoleErrorSpy).toHaveBeenCalled();
+    } finally {
+      db.query = originalQuery;
+      consoleErrorSpy.mockRestore();
+    }
   });
 });
