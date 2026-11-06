@@ -311,7 +311,7 @@ export default function Categories() {
               Loading insights...
             </p>
           )}
-          <div className="h-[30vh] overflow-y-auto rounded-xl">
+          <div className="h-[40vh] overflow-y-auto rounded-xl">
             {insightsData &&
             insightsData.recommended_transactions_to_categorize.length > 0 ? (
               insightsData.recommended_transactions_to_categorize.map(
