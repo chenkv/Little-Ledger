@@ -1,6 +1,7 @@
 "use client";
 
 import Sidebar from "./Sidebar";
+import Categories from "./Categories";
 import SpendingAnalysis from "./SpendingAnalysis";
 import Budgets from "./Budgets";
 import Goals from "./Goals";
@@ -68,6 +69,7 @@ export default function AnalysisClient() {
             }
           }}
         >
+          {displayedTab === "categories" ? <Categories /> : null}
           {displayedTab === "spending" ? <SpendingAnalysis /> : null}
           {displayedTab === "budgets" ? <Budgets /> : null}
           {displayedTab === "goals" ? <Goals /> : null}
