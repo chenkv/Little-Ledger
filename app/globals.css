@@ -49,6 +49,7 @@
   --bg: #f7f3ee;
   --surface: #fffdf9;
   --card: #f2ebe3;
+  --card-hover: #e8dfd5;
   --border: #e0d6c8;
   --divider: #e6ddd2;
 
@@ -67,6 +68,7 @@
   --bg-dark: #1e1a17;
   --surface-dark: #2a2420;
   --card-dark: #3a302a;
+  --card-hover-dark: #4a4038;
   --account-card-dark: #d4d4d4;
   --popup-card-dark: #2a2420;
   --border-dark: #4a3f38;
