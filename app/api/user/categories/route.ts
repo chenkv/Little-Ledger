@@ -47,10 +47,10 @@ export async function POST(req: Request) {
           ? category.match_rules.trim()
           : "";
 
-      if (!name || !matchRules) {
+      if (!name) {
         db.run("ROLLBACK");
         return NextResponse.json(
-          { error: "name and match_rules are required for each category" },
+          { error: "name is required for each category" },
           { status: 400 },
         );
       }
@@ -79,6 +79,116 @@ export async function POST(req: Request) {
   }
 }
 
+export async function PATCH(req: Request) {
+  try {
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    let requestBody: unknown;
+    try {
+      requestBody = await req.json();
+    } catch {
+      return NextResponse.json(
+        { error: "Request body must be valid JSON" },
+        { status: 400 },
+      );
+    }
+
+    if (
+      requestBody === null ||
+      typeof requestBody !== "object" ||
+      Array.isArray(requestBody)
+    ) {
+      return NextResponse.json(
+        { error: "Request body must be a category object" },
+        { status: 400 },
+      );
+    }
+
+    const categoryData = requestBody as Record<string, unknown>;
+    const categoryId = categoryData.id;
+
+    if (
+      typeof categoryId !== "number" ||
+      !Number.isSafeInteger(categoryId) ||
+      categoryId <= 0
+    ) {
+      return NextResponse.json(
+        { error: "Category id must be a positive integer" },
+        { status: 400 },
+      );
+    }
+
+    const update: { name?: string; match_rules?: string } = {};
+    for (const [field, value] of Object.entries(categoryData)) {
+      if (field === "id") continue;
+      if (field !== "name" && field !== "match_rules") {
+        return NextResponse.json(
+          { error: `Unsupported category field: ${field}` },
+          { status: 400 },
+        );
+      }
+
+      if (typeof value !== "string") {
+        return NextResponse.json(
+          {
+            error: `${field === "name" ? "Category name" : "Category match rules"} must be a string`,
+          },
+          { status: 400 },
+        );
+      }
+
+      if (field === "name") {
+        if (!value.trim()) {
+          return NextResponse.json(
+            { error: "Category name must be a non-empty string" },
+            { status: 400 },
+          );
+        }
+        update.name = value.trim();
+      } else {
+        update.match_rules = value.trim();
+      }
+    }
+
+    const fields = Object.entries(update);
+    if (fields.length === 0) {
+      return NextResponse.json(
+        { error: "At least one category field must be provided" },
+        { status: 400 },
+      );
+    }
+
+    const setClause = fields.map(([field]) => `${field} = ?`).join(", ");
+    const result = db
+      .query(`UPDATE categories SET ${setClause} WHERE id = ? AND user_id = ?`)
+      .run(...fields.map(([, value]) => value), categoryId, userId);
+
+    if (result.changes === 0) {
+      return NextResponse.json(
+        { error: "Category not found" },
+        { status: 404 },
+      );
+    }
+
+    const category = db
+      .query(
+        "SELECT id, name, match_rules FROM categories WHERE id = ? AND user_id = ?",
+      )
+      .get(categoryId, userId);
+
+    return NextResponse.json({ category }, { status: 200 });
+  } catch (error) {
+    console.error("Category update error:", error);
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 },
+    );
+  }
+}
+
 export async function GET(req: Request) {
   try {
     const userId = await getUserIdFromRequest(req);
@@ -93,6 +203,71 @@ export async function GET(req: Request) {
     return NextResponse.json({ categories }, { status: 200 });
   } catch (error) {
     console.error("Category retrieval error:", error);
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 },
+    );
+  }
+}
+
+export async function DELETE(req: Request) {
+  try {
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const requestBody = await req.json();
+    if (!Array.isArray(requestBody)) {
+      return NextResponse.json(
+        { error: "Request body must be an array of category IDs" },
+        { status: 400 },
+      );
+    }
+
+    const categoryIds = requestBody.filter(
+      (id): id is number =>
+        typeof id === "number" && Number.isSafeInteger(id) && id > 0,
+    );
+
+    if (categoryIds.length === 0) {
+      return NextResponse.json(
+        { error: "No valid category IDs provided" },
+        { status: 400 },
+      );
+    }
+
+    if (
+      requestBody.some(
+        (id) => typeof id !== "number" || !Number.isSafeInteger(id) || id <= 0,
+      )
+    ) {
+      return NextResponse.json(
+        { error: "Each category ID must be a positive integer" },
+        { status: 400 },
+      );
+    }
+
+    const placeholders = categoryIds.map(() => "?").join(",");
+    const result = db
+      .query(
+        `DELETE FROM categories WHERE id IN (${placeholders}) AND user_id = ?`,
+      )
+      .run(...categoryIds, userId);
+
+    if (result.changes === 0) {
+      return NextResponse.json(
+        { error: "Categories not found" },
+        { status: 404 },
+      );
+    }
+
+    return NextResponse.json(
+      { message: "Categories deleted successfully" },
+      { status: 200 },
+    );
+  } catch (error) {
+    console.error("Category deletion error:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },
