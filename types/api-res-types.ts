@@ -50,3 +50,24 @@ export type categories_get = {
     },
   ];
 };
+
+export type categories_insights = {
+  latest_transactions_to_categorize: [
+    {
+      description: string;
+      financial_account_id: Number;
+      financial_account_name: string;
+      transaction_date: string;
+      transaction_id: Number;
+    },
+  ];
+  recommended_transactions_to_categorize: [
+    {
+      description: string;
+      financial_account_id: Number;
+      financial_account_name: string;
+      occurrence_count: Number;
+      transaction_id: Number;
+    },
+  ];
+};
