@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getUserIdFromRequest } from "../utils";
-import { categorizeTransactions } from "@/app/lib/transactions";
+import { applyCategoryRuleToAll } from "@/app/lib/transactions";
 import db from "@/lib/db";
 
 export async function POST(req: Request) {
@@ -67,7 +67,7 @@ export async function POST(req: Request) {
     for (const category of inserted) {
       if (category.match_rules) {
         try {
-          categorizeTransactions({
+          applyCategoryRuleToAll({
             userId,
             categoryId: Number(category.id),
             rules: category.match_rules,
@@ -203,7 +203,7 @@ export async function PATCH(req: Request) {
 
     if (update.match_rules) {
       try {
-        categorizeTransactions({
+        applyCategoryRuleToAll({
           userId,
           categoryId,
           rules: update.match_rules,

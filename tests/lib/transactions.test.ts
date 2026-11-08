@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, spyOn } from "bun:test";
 process.env.LEDGER_DB_PATH = ":memory:";
 
 import db from "@/lib/db";
-import { categorizeTransactions } from "@/app/lib/transactions";
+import { applyCategoryRuleToAll } from "@/app/lib/transactions";
 
 function createUser(suffix: string) {
   const result = db
@@ -49,7 +49,7 @@ function createTransaction(accountId: number, description: string) {
   );
 }
 
-describe("categorizeTransactions", () => {
+describe("applyCategoryRuleToAll", () => {
   beforeEach(() => {
     db.run("DELETE FROM transactions");
     db.run("DELETE FROM financial_accounts");
@@ -71,7 +71,7 @@ describe("categorizeTransactions", () => {
       "Coffee Market",
     );
 
-    const changes = categorizeTransactions({
+    const changes = applyCategoryRuleToAll({
       userId,
       categoryId,
       rules: " coffee , MARKET \n\n bakery ",
@@ -97,20 +97,20 @@ describe("categorizeTransactions", () => {
     const categoryId = createCategory(userId);
 
     expect(() =>
-      categorizeTransactions({ userId: 0, categoryId, rules: "coffee" }),
+      applyCategoryRuleToAll({ userId: 0, categoryId, rules: "coffee" }),
     ).toThrow("Invalid user ID.");
     expect(() =>
-      categorizeTransactions({ userId, categoryId: 0, rules: "coffee" }),
+      applyCategoryRuleToAll({ userId, categoryId: 0, rules: "coffee" }),
     ).toThrow("Invalid category ID.");
     expect(() =>
-      categorizeTransactions({
+      applyCategoryRuleToAll({
         userId: otherUserId,
         categoryId,
         rules: "coffee",
       }),
     ).toThrow("Category not found.");
     expect(() =>
-      categorizeTransactions({ userId, categoryId, rules: " \n , \n " }),
+      applyCategoryRuleToAll({ userId, categoryId, rules: " \n , \n " }),
     ).toThrow("At least one matching rule is required.");
   });
 
@@ -134,7 +134,7 @@ describe("categorizeTransactions", () => {
 
     try {
       expect(() =>
-        categorizeTransactions({ userId, categoryId, rules: "coffee" }),
+        applyCategoryRuleToAll({ userId, categoryId, rules: "coffee" }),
       ).toThrow("Failed to update transactions.");
       expect(consoleErrorSpy).toHaveBeenCalled();
     } finally {

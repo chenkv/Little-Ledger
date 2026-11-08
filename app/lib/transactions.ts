@@ -6,7 +6,7 @@ type CategorizationParams = {
   rules: string;
 };
 
-export function categorizeTransactions({
+export function applyCategoryRuleToAll({
   userId,
   categoryId,
   rules,
