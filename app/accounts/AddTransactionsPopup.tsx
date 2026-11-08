@@ -285,7 +285,7 @@ export default function AddTransactionsPopup({
         return {
           description: el.description,
           date: formatDateForInput(el.date),
-          category_id: null,
+          category_id: el.category_id,
           amount: Number(el.amount),
         };
       });
@@ -342,7 +342,7 @@ export default function AddTransactionsPopup({
                   <option value="">Select a Category</option>
                   {categories?.map((category) => (
                     <option key={category.id} value={category.id}>
-                      {category.name} ({category.type})
+                      {category.name}
                     </option>
                   ))}
                 </select>
@@ -468,7 +468,7 @@ export default function AddTransactionsPopup({
                         <option value="">Uncategorized</option>
                         {categories?.map((category) => (
                           <option key={category.id} value={category.id}>
-                            {category.name} ({category.type})
+                            {category.name}
                           </option>
                         ))}
                       </select>

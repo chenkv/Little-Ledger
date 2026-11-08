@@ -11,6 +11,7 @@ export type transaction_row = {
 export type parsed_transaction_row = {
   date: string;
   description: string;
+  category_id: number | null;
   amount: number | string;
 };
 
