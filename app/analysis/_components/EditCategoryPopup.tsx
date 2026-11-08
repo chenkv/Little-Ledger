@@ -144,14 +144,33 @@ export default function CreateCategoryPopup({
             />
           </div>
           <div className="mb-4">
-            <label className="block text-left text-sm font-medium text-gray-700 dark:text-gray-300">
-              Category Match Rules
+            <label className="block text-left ">
+              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Category Match Rules
+              </h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Each line defines a matching rule. A transaction will be
+                categorized if <b>any one rule matches</b>.
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-4">
+                Each rule contains one or more comma-separated{" "}
+                <b>case-insensitive</b> substrings.{" "}
+                <b>All substrings within a rule must appear</b> somewhere in the
+                transaction description for that rule to match.
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-4">
+                Example:
+                <br />
+                &quot;Taco Bell&quot;
+                <br />
+                &quot;Uber, eats&quot;
+              </p>
             </label>
             <textarea
               name="matchRules"
-              placeholder="Regex rules to match transactions, separate by new line"
+              placeholder="List of match rules, separate by new line"
               defaultValue={editingCategory?.match_rules || ""}
-              className="mt-1 block w-full h-[20vh] px-3 py-2 border border-gray-300 dark:border-(--border-dark) rounded-md shadow-sm focus:outline-none focus:ring-(--primary-dark) focus:border-(--primary-dark) resize-y"
+              className="mt-2 block w-full h-[20vh] px-3 py-2 border border-gray-300 dark:border-(--border-dark) rounded-md shadow-sm focus:outline-none focus:ring-(--primary-dark) focus:border-(--primary-dark) resize-y"
             />
           </div>
           {errorMessage && (

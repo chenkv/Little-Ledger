@@ -299,7 +299,8 @@ export default function Categories() {
             Set Category Rules for Common Transactions
           </h3>
           <p className="mb-4 text-left text-gray-600 dark:text-gray-400">
-            Category matching rules are in javascript style regex.
+            Category matching rules are comma-separated lists of substrings to
+            match on.
           </p>
           {insightsError && (
             <p className="text-red-500 dark:text-red-400">
@@ -364,10 +365,8 @@ export default function Categories() {
                             type="text"
                             name="matchRules"
                             required
-                            pattern="/.+/"
-                            title="Regex must start and end with /."
-                            defaultValue={"/" + transaction.description + "/"}
-                            placeholder="Enter javascript style regex pattern..."
+                            defaultValue={transaction.description}
+                            placeholder="Enter list of substrings to match on"
                             className="grow p-2 rounded-lg border border-gray-300 dark:border-(--border-dark) dark:bg-(--card-dark)"
                           ></input>
                         </div>
