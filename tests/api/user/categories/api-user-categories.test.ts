@@ -30,8 +30,32 @@ function createUser(suffix = "") {
   return result.lastInsertRowid as number;
 }
 
+function createAccount(userId: number, name: string) {
+  const institution = db
+    .query("SELECT id FROM financial_institutions WHERE name = ?")
+    .get("Chase") as { id: number };
+  const result = db
+    .query(
+      "INSERT INTO financial_accounts (user_id, name, type, institution) VALUES (?, ?, ?, ?)",
+    )
+    .run(userId, name, "checking", institution.id);
+  return Number(result.lastInsertRowid);
+}
+
+function createTransaction(accountId: number, description: string) {
+  return Number(
+    db
+      .query(
+        "INSERT INTO transactions (financial_account_id, date, description, amount) VALUES (?, ?, ?, ?)",
+      )
+      .run(accountId, "2026-11-05", description, 10).lastInsertRowid,
+  );
+}
+
 describe("categories endpoint", () => {
   beforeEach(() => {
+    db.run("DELETE FROM transactions");
+    db.run("DELETE FROM financial_accounts");
     db.run("DELETE FROM categories");
     db.run("DELETE FROM sessions");
     db.run("DELETE FROM users");
@@ -61,6 +85,48 @@ describe("categories endpoint", () => {
     expect(body.inserted.length).toBe(2);
     expect(body.inserted[0].name).toBe("Groceries");
     expect(body.inserted[1].match_rules).toBe("income");
+  });
+
+  it("categorizes matching transactions for the user's accounts on POST", async () => {
+    const userId = createUser();
+    const otherUserId = createUser("-other");
+    createSessionForUser(userId, "category-auto-post-token");
+    const userAccountId = createAccount(userId, "Checking");
+    const otherAccountId = createAccount(otherUserId, "Other");
+    const coffeeId = createTransaction(userAccountId, "Coffee Shop");
+    const bakeryId = createTransaction(userAccountId, "Neighborhood Bakery");
+    const nonMatchId = createTransaction(userAccountId, "Coffee Roaster");
+    const otherUserTransactionId = createTransaction(
+      otherAccountId,
+      "Coffee Shop",
+    );
+
+    const req = new Request("http://localhost/api/user/categories", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: "Bearer category-auto-post-token",
+      },
+      body: JSON.stringify([
+        { name: "Food", match_rules: "coffee, shop\nbakery" },
+      ]),
+    });
+
+    const res = await categoriesPost(req);
+    const body = await res.json();
+    expect(res.status).toBe(201);
+    const categoryId = Number(body.inserted[0].id);
+    const transactionCategories = db
+      .query("SELECT id, category_id FROM transactions")
+      .all() as { id: number; category_id: number | null }[];
+    const categoryByTransaction = new Map(
+      transactionCategories.map(({ id, category_id }) => [id, category_id]),
+    );
+
+    expect(categoryByTransaction.get(coffeeId)).toBe(categoryId);
+    expect(categoryByTransaction.get(bakeryId)).toBe(categoryId);
+    expect(categoryByTransaction.get(nonMatchId)).toBeNull();
+    expect(categoryByTransaction.get(otherUserTransactionId)).toBeNull();
   });
 
   it("returns 401 when authorization is missing for POST", async () => {

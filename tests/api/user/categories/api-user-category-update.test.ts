@@ -29,6 +29,28 @@ function createCategory(userId: number) {
   return Number(result.lastInsertRowid);
 }
 
+function createAccount(userId: number, name: string) {
+  const institution = db
+    .query("SELECT id FROM financial_institutions WHERE name = ?")
+    .get("Chase") as { id: number };
+  const result = db
+    .query(
+      "INSERT INTO financial_accounts (user_id, name, type, institution) VALUES (?, ?, ?, ?)",
+    )
+    .run(userId, name, "checking", institution.id);
+  return Number(result.lastInsertRowid);
+}
+
+function createTransaction(accountId: number, description: string) {
+  return Number(
+    db
+      .query(
+        "INSERT INTO transactions (financial_account_id, date, description, amount) VALUES (?, ?, ?, ?)",
+      )
+      .run(accountId, "2026-11-05", description, 10).lastInsertRowid,
+  );
+}
+
 function createPatchRequest(
   token: string | null,
   categoryId: number | string,
@@ -60,6 +82,8 @@ function createPatchRequest(
 
 describe("category update endpoint", () => {
   beforeEach(() => {
+    db.run("DELETE FROM transactions");
+    db.run("DELETE FROM financial_accounts");
     db.run("DELETE FROM categories");
     db.run("DELETE FROM sessions");
     db.run("DELETE FROM users");
@@ -68,6 +92,8 @@ describe("category update endpoint", () => {
   it("updates only the supplied category name", async () => {
     const userId = createUser();
     const categoryId = createCategory(userId);
+    const accountId = createAccount(userId, "Checking");
+    const transactionId = createTransaction(accountId, "Market purchase");
     createSessionForUser(userId, "category-update-name-token");
 
     const res = await categoryPatch(
@@ -85,6 +111,59 @@ describe("category update endpoint", () => {
       name: "Food",
       match_rules: "market",
     });
+    expect(
+      (
+        db
+          .query("SELECT category_id FROM transactions WHERE id = ?")
+          .get(transactionId) as { category_id: number | null }
+      ).category_id,
+    ).toBeNull();
+  });
+
+  it("categorizes matching transactions when match rules are updated", async () => {
+    const userId = createUser();
+    const otherUserId = db
+      .query(
+        "INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)",
+      )
+      .run(
+        "other-category-auto-user",
+        "other-category-auto@example.com",
+        "hash",
+      ).lastInsertRowid as number;
+    const categoryId = createCategory(userId);
+    const accountId = createAccount(userId, "Checking");
+    const otherAccountId = createAccount(otherUserId, "Other");
+    const coffeeAndMarketId = createTransaction(accountId, "Coffee Market");
+    const bakeryId = createTransaction(accountId, "Local Bakery");
+    const coffeeOnlyId = createTransaction(accountId, "Coffee Shop");
+    const otherUserTransactionId = createTransaction(
+      otherAccountId,
+      "Coffee Market",
+    );
+    createSessionForUser(userId, "category-update-auto-token");
+
+    const res = await categoryPatch(
+      createPatchRequest(
+        "category-update-auto-token",
+        categoryId,
+        JSON.stringify({ match_rules: "coffee, market\nbakery" }),
+      ),
+    );
+    const body = await res.json();
+    const transactionCategories = db
+      .query("SELECT id, category_id FROM transactions")
+      .all() as { id: number; category_id: number | null }[];
+    const categoryByTransaction = new Map(
+      transactionCategories.map(({ id, category_id }) => [id, category_id]),
+    );
+
+    expect(res.status).toBe(200);
+    expect(categoryByTransaction.get(coffeeAndMarketId)).toBe(categoryId);
+    expect(categoryByTransaction.get(bakeryId)).toBe(categoryId);
+    expect(categoryByTransaction.get(coffeeOnlyId)).toBeNull();
+    expect(categoryByTransaction.get(otherUserTransactionId)).toBeNull();
+    expect(body.category.match_rules).toBe("coffee, market\nbakery");
   });
 
   it("updates match rules without changing the category name and allows clearing them", async () => {
@@ -214,10 +293,61 @@ describe("category update endpoint", () => {
 
     expect(res.status).toBe(404);
     expect(body.error).toBe("Category not found");
+    expect(() => db.run("BEGIN")).not.toThrow();
+    db.run("ROLLBACK");
     const category = db
       .query("SELECT name FROM categories WHERE id = ?")
       .get(categoryId) as { name: string };
     expect(category.name).toBe("Groceries");
+  });
+
+  it("rolls back category changes when transaction categorization fails", async () => {
+    const userId = createUser();
+    const categoryId = createCategory(userId);
+    const accountId = createAccount(userId, "Checking");
+    const transactionId = createTransaction(accountId, "Coffee Market");
+    createSessionForUser(userId, "category-update-categorize-error-token");
+
+    const originalPrepare = db.prepare.bind(db);
+    db.prepare = ((sql: string) => {
+      if (sql.includes("UPDATE transactions AS t")) {
+        return {
+          run: () => {
+            throw new Error("forced transaction categorization failure");
+          },
+        };
+      }
+      return originalPrepare(sql);
+    }) as typeof db.prepare;
+    const consoleErrorSpy = spyOn(console, "error").mockImplementation(
+      () => {},
+    );
+
+    try {
+      const res = await categoryPatch(
+        createPatchRequest(
+          "category-update-categorize-error-token",
+          categoryId,
+          '{"match_rules":"coffee"}',
+        ),
+      );
+      const body = await res.json();
+      const category = db
+        .query("SELECT match_rules FROM categories WHERE id = ?")
+        .get(categoryId) as { match_rules: string };
+      const transaction = db
+        .query("SELECT category_id FROM transactions WHERE id = ?")
+        .get(transactionId) as { category_id: number | null };
+
+      expect(res.status).toBe(500);
+      expect(body.error).toBe("Failed to update category");
+      expect(category.match_rules).toBe("market");
+      expect(transaction.category_id).toBeNull();
+      expect(consoleErrorSpy).toHaveBeenCalled();
+    } finally {
+      db.prepare = originalPrepare;
+      consoleErrorSpy.mockRestore();
+    }
   });
 
   it("returns 500 when the category update query fails", async () => {

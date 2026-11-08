@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getUserIdFromRequest } from "../utils";
+import { categorizeTransactions } from "@/app/lib/transactions";
 import db from "@/lib/db";
 
 export async function POST(req: Request) {
@@ -63,7 +64,31 @@ export async function POST(req: Request) {
       });
     }
 
+    for (const category of inserted) {
+      if (category.match_rules) {
+        try {
+          categorizeTransactions({
+            userId,
+            categoryId: Number(category.id),
+            rules: category.match_rules,
+          });
+        } catch (error) {
+          console.error(
+            "Failed to categorize transactions for category:",
+            category.id,
+            error,
+          );
+          db.run("ROLLBACK");
+          return NextResponse.json(
+            { error: "Failed to update category" },
+            { status: 500 },
+          );
+        }
+      }
+    }
+
     db.run("COMMIT");
+
     return NextResponse.json({ inserted }, { status: 201 });
   } catch (error) {
     console.error("Category insertion error:", error);
@@ -161,17 +186,43 @@ export async function PATCH(req: Request) {
       );
     }
 
+    db.run("BEGIN");
+
     const setClause = fields.map(([field]) => `${field} = ?`).join(", ");
     const result = db
       .query(`UPDATE categories SET ${setClause} WHERE id = ? AND user_id = ?`)
       .run(...fields.map(([, value]) => value), categoryId, userId);
 
     if (result.changes === 0) {
+      db.run("ROLLBACK");
       return NextResponse.json(
         { error: "Category not found" },
         { status: 404 },
       );
     }
+
+    if (update.match_rules) {
+      try {
+        categorizeTransactions({
+          userId,
+          categoryId,
+          rules: update.match_rules,
+        });
+      } catch (error) {
+        console.error(
+          "Failed to categorize transactions for category:",
+          categoryId,
+          error,
+        );
+        db.run("ROLLBACK");
+        return NextResponse.json(
+          { error: "Failed to update category" },
+          { status: 500 },
+        );
+      }
+    }
+
+    db.run("COMMIT");
 
     const category = db
       .query(
@@ -182,6 +233,7 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ category }, { status: 200 });
   } catch (error) {
     console.error("Category update error:", error);
+    db.run("ROLLBACK");
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },
