@@ -289,6 +289,7 @@ export default function Categories() {
               onCategoryCreated={async () => {
                 setIsCategoryPopupOpen(false);
                 await mutate();
+                await mutateInsights();
               }}
             />
           )}
@@ -386,7 +387,7 @@ export default function Categories() {
                           </p>
                         </div>
                         <p className="text-lg font-bold">
-                          {transaction.occurrence_count} occurrences
+                          {String(transaction.occurrence_count)} occurrences
                         </p>
                       </div>
                     )}
@@ -462,12 +463,12 @@ export default function Categories() {
                         ))}
                     </select>
                     {latestTransactionCategoryErrors[
-                      transaction.transaction_id
+                      String(transaction.transaction_id)
                     ] && (
                       <p className="text-red-500 dark:text-red-400">
                         {
                           latestTransactionCategoryErrors[
-                            transaction.transaction_id
+                            String(transaction.transaction_id)
                           ]
                         }
                       </p>
