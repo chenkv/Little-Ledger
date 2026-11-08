@@ -388,7 +388,7 @@ export default function AccountTransactions({
                         <option value="">Uncategorized</option>
                         {categoriesData?.categories.map((category) => (
                           <option key={category.id} value={category.id}>
-                            {category.name} ({category.type})
+                            {category.name}
                           </option>
                         ))}
                       </select>
