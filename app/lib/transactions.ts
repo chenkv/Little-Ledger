@@ -83,3 +83,64 @@ export function applyCategoryRuleToAll({
     throw new Error("Failed to update transactions.");
   }
 }
+
+type Category = {
+  id: number;
+  match_rules: string | null;
+};
+
+type ParsedCategory = {
+  id: number;
+  rules: string[][];
+};
+
+export function matchCategoryToDescription(
+  userId: number,
+  descriptions: string[],
+) {
+  if (!Number.isInteger(userId) || userId <= 0) {
+    throw new Error("Invalid user ID.");
+  }
+
+  if (!Array.isArray(descriptions) || descriptions.length === 0) {
+    throw new Error("Empty transaction descriptions.");
+  }
+
+  const categories = db
+    .prepare(
+      `
+      SELECT id, match_rules
+      FROM categories
+      WHERE user_id = ?
+      ORDER BY id
+    `,
+    )
+    .all(userId) as Category[];
+
+  const parsedCategories: ParsedCategory[] = categories.map((category) => ({
+    id: category.id,
+    rules: (category.match_rules ?? "")
+      .split("\n")
+      .map((line) => line.split(",").map((term) => term.trim().toLowerCase()))
+      .filter((rule) => rule.length > 0 && rule.every(Boolean)),
+  }));
+
+  function matchCategoryId(description: string): number | null {
+    const normalizedDescription = description.toLowerCase();
+
+    for (const category of parsedCategories) {
+      for (const rule of category.rules) {
+        if (rule.every((term) => normalizedDescription.includes(term))) {
+          return category.id;
+        }
+      }
+    }
+
+    return null;
+  }
+
+  return descriptions.map((description) => ({
+    description,
+    categoryId: matchCategoryId(description),
+  }));
+}

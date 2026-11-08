@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getUserIdFromRequest } from "../../utils";
+import { matchCategoryToDescription } from "@/app/lib/transactions";
 import { getRule } from "@/lib/parse-rules";
 
 export async function POST(req: Request) {
@@ -68,6 +69,13 @@ export async function POST(req: Request) {
       { status: 400 },
     );
   }
+
+  transactions = transactions.map((transaction) => {
+    const category = matchCategoryToDescription(userId, [
+      transaction.description,
+    ]);
+    return { ...transaction, category_id: category[0].categoryId };
+  });
 
   return NextResponse.json(
     { message: "Parsed transactions successfully", transactions },

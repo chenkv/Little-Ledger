@@ -3,7 +3,10 @@ import { beforeEach, describe, expect, it, spyOn } from "bun:test";
 process.env.LEDGER_DB_PATH = ":memory:";
 
 import db from "@/lib/db";
-import { applyCategoryRuleToAll } from "@/app/lib/transactions";
+import {
+  applyCategoryRuleToAll,
+  matchCategoryToDescription,
+} from "@/app/lib/transactions";
 
 function createUser(suffix: string) {
   const result = db
@@ -36,6 +39,15 @@ function createCategory(userId: number) {
       "INSERT INTO categories (user_id, name, match_rules) VALUES (?, ?, ?)",
     )
     .run(userId, "Food", "");
+  return Number(result.lastInsertRowid);
+}
+
+function createCategoryWithRules(userId: number, rules: string | null) {
+  const result = db
+    .query(
+      "INSERT INTO categories (user_id, name, match_rules) VALUES (?, ?, ?)",
+    )
+    .run(userId, "Category", rules);
   return Number(result.lastInsertRowid);
 }
 
@@ -141,5 +153,65 @@ describe("applyCategoryRuleToAll", () => {
       db.prepare = originalPrepare;
       consoleErrorSpy.mockRestore();
     }
+  });
+});
+
+describe("matchCategoryToDescription", () => {
+  beforeEach(() => {
+    db.run("DELETE FROM transactions");
+    db.run("DELETE FROM financial_accounts");
+    db.run("DELETE FROM categories");
+    db.run("DELETE FROM users");
+  });
+
+  it("matches case-insensitively with AND/OR rules and returns the first matching category", () => {
+    const userId = createUser("description-matches");
+    const otherUserId = createUser("description-matches-other");
+    const firstCategoryId = createCategoryWithRules(
+      userId,
+      " coffee , SHOP \n bakery ",
+    );
+    createCategoryWithRules(userId, "coffee");
+    createCategoryWithRules(otherUserId, "unrelated merchant");
+    const emptyCategoryId = createCategoryWithRules(userId, null);
+
+    expect(
+      matchCategoryToDescription(userId, [
+        "COFFEE SHOP",
+        "Local bakery",
+        "Coffee roaster",
+        "Unrelated merchant",
+      ]),
+    ).toEqual([
+      { description: "COFFEE SHOP", categoryId: firstCategoryId },
+      { description: "Local bakery", categoryId: firstCategoryId },
+      { description: "Coffee roaster", categoryId: firstCategoryId + 1 },
+      { description: "Unrelated merchant", categoryId: null },
+    ]);
+    expect(emptyCategoryId).toBeGreaterThan(firstCategoryId);
+  });
+
+  it("ignores malformed and blank rule lines", () => {
+    const userId = createUser("description-malformed");
+    const categoryId = createCategoryWithRules(
+      userId,
+      "coffee,,shop\n   \n bakery ",
+    );
+
+    expect(
+      matchCategoryToDescription(userId, ["Coffee shop", "Local bakery"]),
+    ).toEqual([
+      { description: "Coffee shop", categoryId: null },
+      { description: "Local bakery", categoryId },
+    ]);
+  });
+
+  it("rejects invalid users and empty descriptions", () => {
+    expect(() => matchCategoryToDescription(0, ["Coffee"])).toThrow(
+      "Invalid user ID.",
+    );
+    expect(() => matchCategoryToDescription(1, [])).toThrow(
+      "Empty transaction descriptions.",
+    );
   });
 });

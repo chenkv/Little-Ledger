@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, spyOn } from "bun:test";
 process.env.LEDGER_DB_PATH = ":memory:";
 
 import * as userUtils from "@/app/api/user/utils";
+import db from "@/lib/db";
 import { chaseCreditParse } from "@/lib/parse-rules";
 import { POST as parserPost } from "@/app/api/user/statements/parser/route";
 import { runInTemporaryWorkingDirectory } from "@/tests/helpers/run-in-temporary-working-directory";
@@ -149,11 +150,13 @@ describe("statement parser endpoint", () => {
       date: "08/05/26",
       description: "Some merchant",
       amount: "-12",
+      category_id: null,
     });
     expect(body.transactions[1]).toEqual({
       date: "08/06/26",
       description: "Another store",
       amount: "-45.5",
+      category_id: null,
     });
   });
 
@@ -189,16 +192,19 @@ describe("statement parser endpoint", () => {
       date: "08/01/26",
       description: "Payment",
       amount: "10.00",
+      category_id: null,
     });
     expect(body.transactions[1]).toEqual({
       date: "08/05/26",
       description: "Some merchant",
       amount: "-12",
+      category_id: null,
     });
     expect(body.transactions[2]).toEqual({
       date: "08/06/26",
       description: "Other merchant",
       amount: "-33.5",
+      category_id: null,
     });
   });
 
@@ -234,11 +240,13 @@ describe("statement parser endpoint", () => {
       date: "05/01/26",
       description: "Some merchant",
       amount: "-1234.56",
+      category_id: null,
     });
     expect(body.transactions[1]).toEqual({
       date: "06/01/26",
       description: "Other merchant",
       amount: "-45.5",
+      category_id: null,
     });
   });
 
@@ -351,11 +359,13 @@ describe("statement parser endpoint", () => {
       date: "08/05/2026",
       description: "Some merchant",
       amount: "-1234.56",
+      category_id: null,
     });
     expect(body.transactions[1]).toEqual({
       date: "08/06/2026",
       description: "Other merchant",
       amount: "-45.5",
+      category_id: null,
     });
   });
 
@@ -391,11 +401,90 @@ describe("statement parser endpoint", () => {
         date: "08/05/2026",
         description: "Some merchant",
         amount: "-1234.56",
+        category_id: null,
       },
       {
         date: "08/07/2026",
         description: "Payment",
         amount: "4567.89",
+        category_id: null,
+      },
+    ]);
+  });
+
+  it("adds the matching category ID to each parsed transaction for the authenticated user", async () => {
+    const userId = Number(
+      db
+        .query(
+          "INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)",
+        )
+        .run("parser-category-user", "parser-category@example.com", "hash")
+        .lastInsertRowid,
+    );
+    const insertCategory = db.query(
+      "INSERT INTO categories (user_id, name, match_rules) VALUES (?, ?, ?)",
+    );
+    const foodCategoryId = Number(
+      insertCategory.run(userId, "Food", "coffee, shop\nbakery")
+        .lastInsertRowid,
+    );
+    insertCategory.run(userId, "Coffee", "coffee, shop");
+
+    const otherUserId = Number(
+      db
+        .query(
+          "INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)",
+        )
+        .run("parser-other-user", "parser-other@example.com", "hash")
+        .lastInsertRowid,
+    );
+    insertCategory.run(otherUserId, "Other", "uncategorized place");
+    getUserIdFromRequestSpy.mockImplementationOnce(async () => userId);
+
+    const csvText = [
+      "Date,Post Date,Description,Amount,Category",
+      '08/05/2026,08/06/2026,"COFFEE SHOP",12.00,"Shopping"',
+      '08/07/2026,08/08/2026,"Local Bakery",20.00,"Food"',
+      '08/09/2026,08/10/2026,"Uncategorized place",5.00,"Other"',
+    ].join("\n");
+    const formData = new FormData();
+    formData.set(
+      "meta",
+      JSON.stringify({ source: "Discover", type: "credit" }),
+    );
+    formData.set(
+      "file",
+      new Blob([csvText], { type: "text/csv" }),
+      "statement.csv",
+    );
+
+    const req = new Request("http://localhost/api/user/statements/parser", {
+      method: "POST",
+      body: formData,
+    });
+
+    const res = await parserPost(req);
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.transactions).toEqual([
+      {
+        date: "08/05/2026",
+        description: "COFFEE SHOP",
+        amount: "-12",
+        category_id: foodCategoryId,
+      },
+      {
+        date: "08/07/2026",
+        description: "Local Bakery",
+        amount: "-20",
+        category_id: foodCategoryId,
+      },
+      {
+        date: "08/09/2026",
+        description: "Uncategorized place",
+        amount: "-5",
+        category_id: null,
       },
     ]);
   });
