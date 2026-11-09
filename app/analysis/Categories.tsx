@@ -421,11 +421,14 @@ export default function Categories() {
               insightsData.latest_transactions_to_categorize.map(
                 (
                   transaction: categories_insights["latest_transactions_to_categorize"][0],
+                  index: number,
                 ) => {
                   const transactionAmount =
                     "transaction_amount" in transaction
                       ? Number(transaction.transaction_amount)
                       : 0;
+
+                  if (index > 19) return;
 
                   return (
                     <div

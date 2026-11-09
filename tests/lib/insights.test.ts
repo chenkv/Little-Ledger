@@ -88,7 +88,7 @@ describe("uncategorized transaction insights", () => {
     ]);
   });
 
-  it("returns the 20 latest uncategorized transactions for the user", async () => {
+  it("returns the 100 latest uncategorized transactions for the user", async () => {
     const userId = createUser("latest");
     const otherUserId = createUser("latest-other");
     const accountId = createAccount(userId, "Checking");
@@ -101,11 +101,11 @@ describe("uncategorized transaction insights", () => {
         .run(userId, "Food", "market").lastInsertRowid,
     );
 
-    for (let index = 1; index <= 21; index++) {
+    for (let index = 1; index <= 102; index++) {
       createTransaction(
         accountId,
         `Transaction ${index}`,
-        `2026-11-${String(index).padStart(2, "0")} 12:00:00`,
+        new Date(Date.UTC(2026, 10, 5, 12, 0, index)).toISOString(),
         index === 21 ? categoryId : null,
       );
     }
@@ -117,15 +117,18 @@ describe("uncategorized transaction insights", () => {
 
     const result = await getLastUncategorizedTransactions(userId);
 
-    expect(result).toHaveLength(20);
+    expect(result).toHaveLength(100);
     expect(result[0]).toMatchObject({
-      description: "Transaction 20",
+      description: "Transaction 102",
       transaction_id: expect.any(Number),
       transaction_date: "2026-11-05",
       financial_account_name: "Checking",
       financial_account_id: accountId,
     });
-    expect(result[19].description).toBe("Transaction 1");
+    expect(result[99].description).toBe("Transaction 2");
+    expect(
+      result.some((transaction) => transaction.description === "Transaction 1"),
+    ).toBe(false);
     expect(
       result.some(
         (transaction) => transaction.description === "Transaction 21",

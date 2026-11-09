@@ -36,7 +36,7 @@ export async function getLastUncategorizedTransactions(userId: number) {
       JOIN financial_accounts AS fa ON fa.id = t.financial_account_id
       WHERE t.category_id IS NULL AND fa.user_id = ?
       ORDER BY t.created_at DESC
-      LIMIT 20;
+      LIMIT 100;
     `,
     )
     .all(userId);
