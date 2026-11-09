@@ -60,6 +60,7 @@ export type categories_insights = {
       financial_account_name: string;
       transaction_date: string;
       transaction_id: Number;
+      transaction_amount: Number;
     },
   ];
   recommended_transactions_to_categorize: [

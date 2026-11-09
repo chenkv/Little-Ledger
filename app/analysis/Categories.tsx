@@ -185,24 +185,20 @@ export default function Categories() {
 
       // Remove from SWR cache after animation
       setTimeout(async () => {
-        await mutateInsights(
-          (currentData) => {
-            if (!currentData) return currentData;
+        await mutateInsights((currentData) => {
+          if (!currentData) return currentData;
 
-            return {
-              ...currentData,
-              latest_transactions_to_categorize:
-                currentData.latest_transactions_to_categorize.filter(
-                  (
-                    transaction: categories_insights["latest_transactions_to_categorize"][0],
-                  ) =>
-                    String(transaction.transaction_id) !==
-                    String(transactionId),
-                ),
-            } as categories_insights;
-          },
-          { revalidate: false },
-        );
+          return {
+            ...currentData,
+            latest_transactions_to_categorize:
+              currentData.latest_transactions_to_categorize.filter(
+                (
+                  transaction: categories_insights["latest_transactions_to_categorize"][0],
+                ) =>
+                  String(transaction.transaction_id) !== String(transactionId),
+              ),
+          } as categories_insights;
+        });
 
         setExitingLatestTransactions((prev) => {
           const updated = { ...prev };
@@ -221,17 +217,17 @@ export default function Categories() {
     }
   }
 
-  if (insightsData) {
-    console.log(insightsData);
-  }
-
   return (
     <div className="flex-1 mt-6 px-2 rounded-tr-3xl bg-(--surface-dark)">
       <h2 className="text-2xl text-left p-4">Categorize your transactions</h2>
 
       <div className="flex flex-col space-y-4">
         <div className="p-4 border-b border-gray-300 dark:border-(--border-dark)">
-          <h3 className="text-left text-xl mb-4">All categories</h3>
+          <h3 className="text-left text-xl">All categories</h3>
+          <p className="text-left mb-4 text-sm text-gray-500 dark:text-gray-400">
+            Note that if matching rules apply to multiple categories, it will
+            prioritize your oldest category.
+          </p>
           {error && (
             <p className="text-red-500 dark:text-red-400">
               Error fetching categories.
@@ -425,11 +421,17 @@ export default function Categories() {
               insightsData.latest_transactions_to_categorize.map(
                 (
                   transaction: categories_insights["latest_transactions_to_categorize"][0],
-                ) => (
-                  <div
-                    key={transaction.transaction_id + "-latest"}
-                    data-transaction-id={transaction.transaction_id}
-                    className={`flex flex-col items-center rounded-lg p-2 border border-gray-300
+                ) => {
+                  const transactionAmount =
+                    "transaction_amount" in transaction
+                      ? Number(transaction.transaction_amount)
+                      : 0;
+
+                  return (
+                    <div
+                      key={transaction.transaction_id + "-latest"}
+                      data-transaction-id={transaction.transaction_id}
+                      className={`flex flex-col items-center rounded-lg p-2 border border-gray-300
                     dark:border-(--border-dark) hover:bg-(--card-hover) dark:hover:bg-(--card-hover-dark)
                     transition-all duration-300 ease-in-out
                     ${
@@ -439,42 +441,45 @@ export default function Categories() {
                         ? "opacity-0 scale-95 translate-y-2 pointer-events-none"
                         : ""
                     }`}
-                  >
-                    <p className="text-lg">{transaction.description}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      {transaction.financial_account_name}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {transaction.transaction_date}
-                    </p>
-                    <select
-                      className="mt-4 p-2 border border-gray-300 dark:border-(--border-dark) dark:bg-(--card-dark)"
-                      onChange={handleSelectLatestCategory}
                     >
-                      <option value="">Select Category</option>
-                      {data &&
-                        data.categories.map((category) => (
-                          <option
-                            key={category.id + "-latest"}
-                            value={category.id}
-                          >
-                            {category.name}
-                          </option>
-                        ))}
-                    </select>
-                    {latestTransactionCategoryErrors[
-                      String(transaction.transaction_id)
-                    ] && (
-                      <p className="text-red-500 dark:text-red-400">
-                        {
-                          latestTransactionCategoryErrors[
-                            String(transaction.transaction_id)
-                          ]
-                        }
+                      <p className="text-lg">{transaction.description}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {transaction.financial_account_name}
                       </p>
-                    )}
-                  </div>
-                ),
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {transactionAmount < 0 ? "-" : ""}$
+                        {Math.abs(transactionAmount)} •{" "}
+                        {transaction.transaction_date}
+                      </p>
+                      <select
+                        className="mt-4 p-2 border border-gray-300 dark:border-(--border-dark) dark:bg-(--card-dark)"
+                        onChange={handleSelectLatestCategory}
+                      >
+                        <option value="">Select Category</option>
+                        {data &&
+                          data.categories.map((category) => (
+                            <option
+                              key={category.id + "-latest"}
+                              value={category.id}
+                            >
+                              {category.name}
+                            </option>
+                          ))}
+                      </select>
+                      {latestTransactionCategoryErrors[
+                        String(transaction.transaction_id)
+                      ] && (
+                        <p className="text-red-500 dark:text-red-400">
+                          {
+                            latestTransactionCategoryErrors[
+                              String(transaction.transaction_id)
+                            ]
+                          }
+                        </p>
+                      )}
+                    </div>
+                  );
+                },
               )
             ) : (
               <p className="text-gray-500 dark:text-gray-400">

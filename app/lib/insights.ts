@@ -29,6 +29,7 @@ export async function getLastUncategorizedTransactions(userId: number) {
         t.description,
         t.id AS transaction_id,
         t.date AS transaction_date,
+        t.amount as transaction_amount,
         fa.name AS financial_account_name,
         fa.id AS financial_account_id
       FROM transactions AS t
