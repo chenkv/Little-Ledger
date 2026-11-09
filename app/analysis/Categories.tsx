@@ -24,7 +24,7 @@ export default function Categories() {
     error: insightsError,
     isLoading: insightsLoading,
     mutate: mutateInsights,
-  } = useSWR("/api/user/categories/insights", fetcher<categories_insights>);
+  } = useSWR("/api/user/insights/categories", fetcher<categories_insights>);
 
   const [isCategoryPopupOpen, setIsCategoryPopupOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<

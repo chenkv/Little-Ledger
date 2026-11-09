@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, spyOn } from "bun:test";
 process.env.LEDGER_DB_PATH = ":memory:";
 
 import db from "@/lib/db";
-import { GET as categoryInsightsGet } from "@/app/api/user/categories/insights/route";
+import { GET as categoryInsightsGet } from "@/app/api/user/insights/categories/route";
 
 function createUser() {
   const result = db
@@ -49,7 +49,7 @@ describe("category insights endpoint", () => {
     ).run(accountId, "2026-11-02", "Coffee Shop", 6, "2026-11-02 09:00:00");
     createSession(userId, "category-insights-token");
 
-    const req = new Request("http://localhost/api/user/categories/insights", {
+    const req = new Request("http://localhost/api/user/insights/categories", {
       headers: { cookie: "session_token=category-insights-token" },
     });
     const res = await categoryInsightsGet(req);
@@ -75,7 +75,7 @@ describe("category insights endpoint", () => {
 
   it("returns 401 when the request is unauthenticated", async () => {
     const res = await categoryInsightsGet(
-      new Request("http://localhost/api/user/categories/insights"),
+      new Request("http://localhost/api/user/insights/categories"),
     );
     const body = await res.json();
 
@@ -99,7 +99,7 @@ describe("category insights endpoint", () => {
     );
 
     try {
-      const req = new Request("http://localhost/api/user/categories/insights", {
+      const req = new Request("http://localhost/api/user/insights/categories", {
         headers: { cookie: "session_token=category-insights-error-token" },
       });
       const res = await categoryInsightsGet(req);
