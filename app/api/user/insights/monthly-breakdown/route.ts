@@ -21,18 +21,31 @@ export async function GET(req: Request) {
 
     const transactions = db
       .query(
-        `SELECT t.* FROM transactions t
+        `SELECT t.*, fa.name AS financial_account_name FROM transactions t
         JOIN financial_accounts fa ON t.financial_account_id = fa.id
         WHERE fa.user_id = ? AND STRFTIME('%Y-%m', date) = ?
-        ORDER BY t.date DESC`,
+        ORDER BY t.date DESC;`,
       )
-      .all(userId, month);
+      .all(userId, month) as { amount: number }[];
 
-    const total_spent = transactions.reduce((total, item) => {
-      return total + item["amount"];
-    }, 0);
+    const total_spent =
+      transactions.reduce(
+        (total, item) =>
+          total + (item.amount < 0 ? Math.round(item.amount * 100) : 0),
+        0,
+      ) / 100;
 
-    return NextResponse.json({ transactions, total_spent }, { status: 200 });
+    const income =
+      transactions.reduce(
+        (total, item) =>
+          total + (item.amount > 0 ? Math.round(item.amount * 100) : 0),
+        0,
+      ) / 100;
+
+    return NextResponse.json(
+      { transactions, total_spent, income },
+      { status: 200 },
+    );
   } catch (error) {
     console.error("Transactions retrieval error:", error);
     return NextResponse.json(

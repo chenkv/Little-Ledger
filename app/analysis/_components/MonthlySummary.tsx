@@ -107,26 +107,32 @@ export default function MonthlySummary() {
 
       {/* TODO: Dynamically pull data from API */}
       <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 lg:grid-cols-4">
-        <SummaryCard
-          title="Total spent"
-          value="$2,123.43"
-          description="Maybe some insight here"
-        />
-        <SummaryCard
-          title="Income"
-          value="$2,123.43"
-          description="This month"
-        />
-        <SummaryCard
-          title="Net Cash Flow"
-          value="$2,123.43"
-          description="Income minus expenses"
-        />
-        <SummaryCard
-          title="Daily Average"
-          value="$2,123.43"
-          description="Spending per day"
-        />
+        {isLoading || error ? (
+          <p>Loading</p>
+        ) : (
+          <>
+            <SummaryCard
+              title="Total spent"
+              value={data.total_spent}
+              description="Maybe some insight here"
+            />
+            <SummaryCard
+              title="Income"
+              value={data.income}
+              description="This month"
+            />
+            <SummaryCard
+              title="Net Cash Flow"
+              value={Math.round((data.income + data.total_spent) * 100) / 100}
+              description="Income minus expenses"
+            />
+            <SummaryCard
+              title="Daily Average"
+              value={data.total_spent}
+              description="Spending per day"
+            />
+          </>
+        )}
       </div>
     </div>
   );
