@@ -58,7 +58,7 @@ export default function AnalysisClient() {
 
   return (
     <div className="flex flex-1 w-full flex-col text-center">
-      <h1 className="py-4 text-4xl">What do you want to examine today?</h1>
+      <h1 className="py-4 text-4xl">What do you want to analyze today?</h1>
       <div className="flex-1 flex">
         <Sidebar active={activeTab} setActive={selectTab} />
         <div
